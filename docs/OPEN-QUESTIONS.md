@@ -30,13 +30,13 @@ Weather and seasonality. Some of these routes are unrideable in winter. A simple
 
 ## The three open routes, 2026-08-16
 
-Three routes start exactly at the meeting point but finish 3.9 km away, at 51.61722, -3.17515 near Cwmfelinfach in the Sirhowy valley. All three finish within 30 m of each other, so it is clearly a deliberate end point rather than an accident.
+Three routes start exactly at the meeting point but finish 3.9 km away, at the second zone (see zones.local.txt) near Cwmfelinfach in the Sirhowy valley. All three finish within 30 m of each other, so it is clearly a deliberate end point rather than an accident.
 
 Gravel - New Tredegar to Tredegar, Gravel - Pontsticill and Trefil, and Gravel - Pant, Pontsticill and Torpantau.
 
 They cannot be closed losslessly. Rotation only works on a route that already returns to the point, and none of these do. No other route in the library rides between those two locations either, so there is no existing recorded geometry to borrow.
 
-The fix needs about 4 km of real road, drawn once. Plan it in Garmin or Komoot from 51.61722, -3.17515 back to 51.647080, -3.205153, export it as GPX, and run:
+The fix needs about 4 km of real road, drawn once. Plan it in Garmin or Komoot from the second zone (see zones.local.txt) back to 51.647080, -3.205153, export it as GPX, and run:
 
     python scripts\align_starts.py --at 51.647080,-3.205153 --connector <that file>.gpx --apply
 

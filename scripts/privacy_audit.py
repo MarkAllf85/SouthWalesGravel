@@ -11,8 +11,12 @@ and reports what git would actually publish.
 Exit code is 1 if any tracked or untracked-but-unignored file breaches a zone,
 which makes it usable as a pre-push hook.
 
+The zone coordinates are deliberately NOT hard-coded or shown here. Keep them
+in `zones.local.txt`, which .gitignore excludes, and pass them on the command
+line. Publishing the exclusion zones would defeat the point of having them.
+
 Usage:
-    python scripts/privacy_audit.py --avoid 51.6,-3.2 --avoid 51.61,-3.17 --radius 200
+    python scripts/privacy_audit.py --avoid LAT,LON --avoid LAT,LON --radius 200
 """
 
 from __future__ import annotations

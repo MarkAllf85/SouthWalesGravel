@@ -4,6 +4,8 @@ data/raw/_pre_clip/
 data/raw/_pre_alignment/
 data/raw/_private/
 _to_delete/
+zones.local.txt
+privacy-check.ps1
 **/COURSE_*.gpx
 
 # Working files

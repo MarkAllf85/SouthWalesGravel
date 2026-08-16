@@ -31,6 +31,10 @@ Renaming a course in Garmin changes the exported filename and therefore the gene
 
 Tile providers are free but rate limited and rely on their operators' goodwill. If CyclOSM or OpenTopoMap start refusing requests, the fix is a Thunderforest or MapTiler key on a free tier rather than abandoning the layer.
 
+## Where the zone coordinates live
+
+Nowhere in this repository. They sit in `zones.local.txt`, which `.gitignore` excludes, and are passed on the command line. Publishing the exclusion zones alongside the routes would tell a reader exactly which gap in the data to look at, which defeats the purpose of clipping in the first place. The meeting point is a different matter: every published route starts and finishes there, so it is public whether the docs mention it or not.
+
 ## The two maintenance scripts
 
 `scripts/name_routes.py` proposes geographic names from the gazetteer in `scripts/data/gb_places.csv`. Run it bare to see proposals with the evidence behind each one, `--csv out.csv` to get them in a file, and `--apply approved.csv` to rewrite the GPX names and filenames from a csv with `id` and `approved_name` columns. It never invents a place; anything it cannot resolve is reported as needing local knowledge.
@@ -41,7 +45,7 @@ Tile providers are free but rate limited and rely on their operators' goodwill. 
 
 `scripts/clip_to_point.py` is the privacy step and must run first:
 
-    python scripts\clip_to_point.py --at 51.647080,-3.205153 --avoid <address lat,lon> --avoid 51.617153,-3.175053 --radius 200 --apply
+    python scripts\clip_to_point.py --at 51.647080,-3.205153 --avoid LAT,LON --avoid LAT,LON --radius 200 --apply
     python scripts\align_starts.py --at 51.647080,-3.205153 --apply
     python scripts\name_routes.py --apply approved.csv
     python scripts\build.py
