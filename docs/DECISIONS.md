@@ -31,6 +31,9 @@ updated: 2026-08-16
 
 | 14 | 2026-08-16 | Two exclusion zones, not one | A second 200 m zone at 51.617153, -3.175053 in Cwmfelinfach, where three point-to-point routes finished. The clip script takes `--avoid` more than once and applies each zone in turn. Only the three finishes touched it and nothing passed through mid-ride, so trimming ends was enough and no seam rotation was needed. Extending the routes by 200 m instead was not an option: that direction means inventing road. | Agreed |
 
+| 15 | 2026-08-16 | Mobile treated as a first-class layout, not a shrunk desktop | Tested at 360, 390, 820 and landscape 844x390. The header was clipping and wrapping to three lines, so the wordmark, the route count and the button labels all shorten below 700 px and the count becomes 26/26. Hit areas grow under `(pointer: coarse)`: buttons 40 px, duration bands 44 px, slider thumbs 22 px. In landscape the detail card docks to the right rather than sitting as a bottom sheet, because at 390 px tall a sheet buried the map. The tile attribution moves to the bottom left so the card can never cover it, which is a licence requirement, not a nicety. | Agreed |
+| 16 | 2026-08-16 | Fractional zoom, `zoomSnap: 0.1` | `fitBounds` snaps to whole zoom levels by default, and on a narrow viewport that rounds down a full level, drawing the whole library at half scale in the middle of an empty screen. Fractional zoom fits properly. The cost is slightly softened tiles at non-integer zoom, which is a fair trade for a map whose entire job is showing everything at once. | Agreed |
+
 ## Open items needing a decision
 
 Repository visibility. A public GitHub Pages site means the routes, and therefore the roads around home, are world readable. An unlisted-but-public URL is the usual compromise, or the repo can be private with Pages served from a paid plan. Worth a deliberate choice rather than a default.
