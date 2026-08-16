@@ -82,6 +82,7 @@ header .spacer { flex: 1; }
   cursor: pointer;
 }
 .btn:hover { background: var(--surface-2); }
+a.btn { text-decoration: none; display: inline-flex; align-items: center; }
 .btn.primary { background: var(--brand); color: var(--brand-ink); border-color: transparent;
   font-weight: 600; letter-spacing: .01em; }
 .btn.primary:hover { filter: brightness(1.1); }
@@ -186,7 +187,10 @@ input[type="range"].single { width: 100%; accent-color: var(--brand); }
   border-radius: 7px; padding: 4px 8px; font-size: 12px; box-shadow: var(--shadow);
   font-variant-numeric: tabular-nums; white-space: nowrap; display: none; z-index: 2; top: 0;
 }
-#detail .actions { display: flex; gap: 8px; padding: 10px 14px 14px; align-items: center; }
+#detail .actions { display: flex; gap: 8px; padding: 10px 14px 14px; align-items: center;
+  flex-wrap: wrap; }
+#detail .actions .btn { white-space: nowrap; }
+#detail .actions .muted { white-space: nowrap; }
 #detail .actions a { text-decoration: none; }
 .muted { color: var(--text-muted); font-size: 12px; }
 
@@ -261,6 +265,7 @@ input[type="range"].single { width: 100%; accent-color: var(--brand); }
   <h1 class="mark"><span class="k1">South Wales</span><span class="k2">Gravel Routes</span></h1>
   <span class="count" id="count"></span>
   <span class="spacer"></span>
+  <a class="btn" href="faq.html" id="faqBtn" title="How to load these onto your Garmin"><span class="wide">Help</span><span class="narrow">?</span></a>
   <button class="btn" id="fitBtn"><span class="wide">Fit view</span><span class="narrow">Fit</span></button>
   <button class="btn" id="themeBtn" aria-label="Toggle dark mode">Light</button>
 </header>
@@ -720,6 +725,7 @@ function select(id, fly) {
   var acts = [];
   if (r.source_files.gpx) acts.push('<a class="btn primary" href="' + r.source_files.gpx + '" download>Download GPX</a>');
   if (r.source_files.fit) acts.push('<a class="btn" href="' + r.source_files.fit + '" download>Download FIT</a>');
+  acts.push('<a class="btn" href="faq.html#garmin-iphone" title="How to load this onto your Garmin">To Garmin</a>');
   acts.push('<span class="muted" style="margin-left:auto">' +
     r.route_type.replace(/-/g, " ") + " &middot; " + r.gradient_bands.climb_km.toFixed(1) + " km climbing</span>");
   document.getElementById("dActions").innerHTML = acts.join("");

@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en-GB" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FAQ — South Wales Gravel Routes</title>
+<meta name="theme-color" content="#0a0a0b">
+<meta name="description" content="How to get a route from South Wales Gravel Routes onto your Garmin, and how the ride times are worked out.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230a0a0b'/%3E%3Cpath d='M5 23c4-1 4-9 8-10s5 6 9 4 4-8 5-9' stroke='%234485CB' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+<style>
+:root {
+  color-scheme: light;
+  --surface-0: #f1f2f5;
+  --surface-1: #ffffff;
+  --surface-2: #e7e9ee;
+  --border:    #d5d8df;
+  --text-primary:   #0a0a0b;
+  --text-secondary: #4a4e57;
+  --text-muted:     #787d88;
+  --brand:     #2f6db0;
+  --brand-ink: #ffffff;
+  --accent:    #eb6834;
+  --shadow: 0 1px 2px rgba(0,0,0,.06), 0 8px 24px rgba(0,0,0,.08);
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --surface-0: #0a0a0b;
+  --surface-1: #121316;
+  --surface-2: #1e2025;
+  --border:    #2a2d34;
+  --text-primary:   #ffffff;
+  --text-secondary: #b8bcc5;
+  --text-muted:     #7d828d;
+  --brand:     #4485cb;
+  --brand-ink: #ffffff;
+  --accent:    #d95926;
+  --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.5);
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  font: 16px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--surface-0); color: var(--text-primary);
+}
+header {
+  position: sticky; top: 0; z-index: 10;
+  display: flex; align-items: center; gap: 14px; padding: 0 16px; height: 56px;
+  background: var(--surface-1); border-bottom: 1px solid var(--border);
+  box-shadow: inset 0 3px 0 var(--brand);
+}
+.mark { display: flex; flex-direction: column; line-height: 1.05; margin: 0; text-decoration: none; }
+.mark .k1 { font-size: 9.5px; font-weight: 700; letter-spacing: .22em; text-transform: uppercase; color: var(--brand); }
+.mark .k2 { font-size: 16px; font-weight: 750; letter-spacing: -.025em; text-transform: uppercase; color: var(--text-primary); }
+header .spacer { flex: 1; }
+.btn {
+  font: inherit; font-size: 13px; padding: 9px 12px; border-radius: 8px; cursor: pointer;
+  border: 1px solid var(--border); background: var(--surface-1); color: var(--text-primary);
+  text-decoration: none; display: inline-flex; align-items: center; min-height: 40px;
+}
+.btn:hover { background: var(--surface-2); }
+.btn.primary { background: var(--brand); color: var(--brand-ink); border-color: transparent; font-weight: 600; }
+
+main { max-width: 720px; margin: 0 auto; padding: 28px 18px 80px; }
+h1 { font-size: 28px; line-height: 1.2; letter-spacing: -.03em; margin: 8px 0 6px; }
+.lede { color: var(--text-secondary); font-size: 17px; margin: 0 0 34px; }
+h2 {
+  font-size: 20px; letter-spacing: -.02em; margin: 40px 0 10px;
+  padding-top: 20px; border-top: 1px solid var(--border);
+}
+h3 { font-size: 15px; margin: 26px 0 8px; letter-spacing: -.01em; }
+p { margin: 0 0 14px; color: var(--text-secondary); }
+p strong, li strong { color: var(--text-primary); font-weight: 620; }
+a { color: var(--brand); }
+ol, ul { margin: 0 0 14px; padding-left: 22px; color: var(--text-secondary); }
+li { margin-bottom: 7px; }
+li::marker { color: var(--text-muted); }
+.note {
+  background: var(--surface-1); border: 1px solid var(--border); border-left: 3px solid var(--brand);
+  border-radius: 8px; padding: 13px 15px; margin: 0 0 18px;
+}
+.note p:last-child { margin-bottom: 0; }
+.note .h { font-size: 12px; text-transform: uppercase; letter-spacing: .09em; font-weight: 700;
+           color: var(--brand); margin-bottom: 5px; }
+.toc { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px;
+       padding: 14px 18px; margin-bottom: 8px; }
+.toc ul { list-style: none; padding: 0; margin: 0; }
+.toc li { margin-bottom: 6px; }
+.toc a { text-decoration: none; }
+.toc a:hover { text-decoration: underline; }
+footer { border-top: 1px solid var(--border); margin-top: 48px; padding-top: 18px;
+         font-size: 13px; color: var(--text-muted); }
+footer a { color: var(--text-muted); }
+.narrow { display: none; }
+@media (max-width: 640px) {
+  header { gap: 10px; padding: 0 12px; }
+  header > * { flex: none; white-space: nowrap; }
+  header .spacer { flex: 1 1 auto; }
+  .mark .k1 { display: none; }
+  .mark .k2 { font-size: 14px; white-space: nowrap; }
+  .btn { font-size: 12.5px; padding: 8px 10px; }
+  .wide { display: none; }
+  .narrow { display: inline; }
+  main { padding: 20px 15px 64px; }
+  h1 { font-size: 24px; }
+  h2 { font-size: 18px; }
+  body { font-size: 15.5px; }
+}
+</style>
+</head>
+<body>
+<header>
+  <a class="mark" href="./"><span class="k1">South Wales</span><span class="k2">Gravel Routes</span></a>
+  <span class="spacer"></span>
+  <a class="btn primary" href="./"><span class="wide">Back to the map</span><span class="narrow">&larr; Map</span></a>
+  <button class="btn" id="themeBtn">Light</button>
+</header>
+
+<main>
+<h1>Questions</h1>
+<p class="lede">Mostly: how do I get one of these routes onto my head unit, and why does the time it predicts not match the one in my app.</p>
+
+<div class="toc">
+  <ul>
+    <li><a href="#garmin-iphone">Getting a route onto a Garmin, iPhone</a></li>
+    <li><a href="#garmin-android">Getting a route onto a Garmin, Android</a></li>
+    <li><a href="#garmin-computer">Getting a route onto a Garmin, from a computer</a></li>
+    <li><a href="#why-not-direct">Why isn't there a "send to Garmin" button?</a></li>
+    <li><a href="#other-units">Wahoo, Hammerhead and everything else</a></li>
+    <li><a href="#what-is-gpx">What is a GPX file?</a></li>
+    <li><a href="#times">Why is the ride time different from Garmin's?</a></li>
+    <li><a href="#speed">What should I set my average speed to?</a></li>
+    <li><a href="#starts">Why do the routes all start in the same place?</a></li>
+    <li><a href="#safety">Are these routes rideable, legal and safe?</a></li>
+    <li><a href="#add">Can I add a route?</a></li>
+  </ul>
+</div>
+
+<h2 id="garmin-iphone">Getting a route onto a Garmin, iPhone</h2>
+
+<p>This works, and takes about a minute.</p>
+
+<ol>
+  <li>On the map, tap a route, then tap <strong>Download GPX</strong>. Safari saves it to Files, usually in Downloads.</li>
+  <li>Open the <strong>Files</strong> app and find it. Safari also shows a download arrow in the address bar that takes you straight there.</li>
+  <li>Tap the file, then tap the <strong>share icon</strong>, the square with the arrow coming out of it.</li>
+  <li>Choose <strong>Garmin Connect</strong> from the list of apps. If it isn't showing, scroll the row of app icons and tap <strong>More</strong>.</li>
+  <li>Connect asks what type of course it is. Pick <strong>Gravel</strong> or <strong>Cycling</strong>.</li>
+  <li>Give it a name, then <strong>Save</strong>.</li>
+  <li>Tap <strong>Send to Device</strong> at the top right and pick your head unit. Wait for it to confirm.</li>
+</ol>
+
+<p>Your watch or bike computer needs to be connected to your phone for the last step. If it doesn't appear, open Connect's device list first to wake the connection, then try again.</p>
+
+<h2 id="garmin-android">Getting a route onto a Garmin, Android</h2>
+
+<p>Try Garmin Connect first, exactly as above: download, then open the file from your Downloads and use <strong>Open with</strong> or the share button.</p>
+
+<div class="note">
+  <div class="h">If Garmin Connect doesn't appear</div>
+  <p>Connect on Android has a long history of not registering itself as something that can open a GPX file, and whether it appears seems to vary by version. If it isn't in the list, use <strong>Garmin Explore</strong> instead. It's a free Garmin app, it reliably accepts GPX from the Open with dialog, and it syncs courses to your device the same way. It will also do it without an internet connection, which Connect will not.</p>
+</div>
+
+<p>The other reliable option on Android is to skip the phone entirely and use a computer, below.</p>
+
+<h2 id="garmin-computer">Getting a route onto a Garmin, from a computer</h2>
+
+<p>Slower to start but the most dependable, and much easier if you're loading several routes before a trip.</p>
+
+<ol>
+  <li>Download the GPX files you want from the map.</li>
+  <li>Go to <a href="https://connect.garmin.com/" rel="noopener">connect.garmin.com</a> and sign in.</li>
+  <li>Open <strong>Training &amp; Planning</strong>, then <strong>Courses</strong>.</li>
+  <li>Choose <strong>Import</strong> and select your files.</li>
+  <li>Open each course and use <strong>Send to Device</strong>.</li>
+</ol>
+
+<p>The courses also sync to the Connect app on your phone, so you can send them to your head unit from there later.</p>
+
+<h2 id="why-not-direct">Why isn't there a "send to Garmin" button?</h2>
+
+<p>Because Garmin doesn't provide one that a website can use. There's no link a browser can follow that hands a route to the Connect app, so any site claiming to do it is really just downloading a file and hoping you know what to do next.</p>
+
+<p>Garmin does have an official way to push routes straight into your account, but it's restricted to business and enterprise use, and it would mean running a server that holds a login token for everyone who uses this. That's a lot of machinery, and a lot of your data sitting somewhere, to save you four taps. This site is a folder of files behind a link, with no accounts and nothing stored about you, and that seems the better trade.</p>
+
+<h2 id="other-units">Wahoo, Hammerhead and everything else</h2>
+
+<p>GPX is the common language, so a route from here will load onto essentially any modern bike computer. The steps differ by app, but the shape is the same: download the file, then share or import it into whichever companion app your head unit uses, and sync.</p>
+
+<p>If you plan in Komoot, Strava or Ride with GPS, all three accept a GPX upload, and you can send to your device from there. That's often the easiest path if it's already where your routes live.</p>
+
+<h2 id="what-is-gpx">What is a GPX file?</h2>
+
+<p>A plain list of coordinates describing a line on the ground, plus the height at each point. It's the standard format for sharing routes, and it isn't tied to any one brand.</p>
+
+<p>What it doesn't carry is turn-by-turn navigation prompts. When you import a GPX, Garmin recalculates the turns itself, which is normally fine and occasionally produces an odd instruction where the route uses a track that the map data doesn't know about. Follow the line rather than the arrow if the two disagree.</p>
+
+<h2 id="times">Why is the ride time different from Garmin's?</h2>
+
+<p>Because this one is calculated for you rather than for whoever planned the route.</p>
+
+<p>Garmin's estimate comes from the fitness profile of the person whose account the course lives in. Useful to them, meaningless to everyone else. This site instead works the time out from the route's own gradient profile: it looks at every rise and fall along the way and computes how fast you'd actually be going on each, then adds an allowance for gates, junctions and waiting for stragglers.</p>
+
+<p>Move the <strong>typical average speed</strong> slider on the map and every time on the page changes to yours. Hilly routes will come out slower than your average and flat ones faster, which is the whole point of doing it this way rather than dividing distance by a single number.</p>
+
+<h2 id="speed">What should I set my average speed to?</h2>
+
+<p>Whatever you normally see at the end of a gravel ride of a couple of hours. Not your best ever, and not your road average, which will be higher.</p>
+
+<p>Two other controls matter. <strong>Weight</strong> is you plus the bike plus whatever you're carrying, and it changes what the climbs cost you rather than the flat. <strong>Surface</strong> matters more than people expect: rolling resistance is the single biggest variable on gravel, and the difference between smooth forest road and loose stone is worth several minutes an hour. Set it to whatever you expect underfoot and the estimates get noticeably more honest.</p>
+
+<h2 id="starts">Why do the routes all start in the same place?</h2>
+
+<p>So the group has one place to meet without anyone having to open the file to find out where it begins. Most of the loops here start and finish at the same spot near Ystrad Mynach.</p>
+
+<p>A handful don't, and that's deliberate. Some are drive-to rides that start elsewhere, and a few finish somewhere different from where they began. The map labels each route as a loop, an out and back, or point to point, so you know before you commit.</p>
+
+<h2 id="safety">Are these routes rideable, legal and safe?</h2>
+
+<p>They're routes that have been planned or ridden, shared so you don't have to draw your own. That isn't a guarantee about any of them.</p>
+
+<p>Surfaces change with the seasons, and a track that was fine in July can be unrideable in February. Forestry operations close paths at no notice. A line on a map is not proof of a right of way. Check conditions and access before you go, take enough food and water for the time the estimate gives you plus a margin, and tell someone where you're heading. Several of these routes cross ground with no phone signal.</p>
+
+<h2 id="add">Can I add a route?</h2>
+
+<p>Send the GPX to Mark and it'll go in on the next update. Routes get processed before publishing so they start at the common meeting point and don't show anyone's front door, which is why they don't just get dropped in as they arrive.</p>
+
+<footer>
+  <p>Map data © <a href="https://www.openstreetmap.org/copyright" rel="noopener">OpenStreetMap</a> contributors. Tiles by <a href="https://www.cyclosm.org/" rel="noopener">CyclOSM</a> and <a href="https://opentopomap.org/" rel="noopener">OpenTopoMap</a>. Satellite imagery © Esri.</p>
+  <p>The steps above were correct when written. Garmin changes its apps regularly, so if something has moved, tell Mark and this page gets fixed.</p>
+</footer>
+</main>
+
+<script>
+(function () {
+  var btn = document.getElementById("themeBtn");
+  function isDark() { return document.documentElement.getAttribute("data-theme") === "dark"; }
+  btn.textContent = isDark() ? "Light" : "Dark";
+  btn.addEventListener("click", function () {
+    document.documentElement.setAttribute("data-theme", isDark() ? "light" : "dark");
+    btn.textContent = isDark() ? "Light" : "Dark";
+  });
+})();
+</script>
+</body>
+</html>
