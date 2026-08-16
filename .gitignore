@@ -1,0 +1,16 @@
+# Never publish working backups of the route files. These hold the pristine
+# Garmin exports, which still contain the private start and finish points.
+data/raw/_pre_clip/
+data/raw/_pre_alignment/
+data/raw/_private/
+_to_delete/
+**/COURSE_*.gpx
+
+# Working files
+data/processed/
+work/
+node_modules/
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db

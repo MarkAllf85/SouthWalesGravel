@@ -1,0 +1,38 @@
+---
+name: decisions
+description: Decision log for Bike Route Explorer with rationale and status
+type: project
+updated: 2026-08-16
+---
+
+# Decision Log
+
+| # | Date | Decision | Rationale | Status |
+|---|------|----------|-----------|--------|
+| 1 | 2026-08-16 | GPX is the rendering format, FIT is carried through for download | GPX is plain XML and parses trivially in Python and in the browser. FIT is Garmin's binary format and needs a decoder, but it is the better file to load onto a Garmin device because it preserves turn-by-turn cues and ClimbPro data. So the pipeline renders from GPX and offers both formats for download where both exist. | Agreed |
+| 2 | 2026-08-16 | Leaflet with free tile layers, not Google Maps | No API key, no billing account, no key exposed in a public page. CyclOSM and OpenTopoMap render unsurfaced tracks, bridleways and contours properly, which is exactly what matters for gravel. Google's cartography actively hides the tracks we care about. An Esri World Imagery layer can be added for eyeballing surface from the air. | Agreed |
+| 3 | 2026-08-16 | GitHub Pages hosting | Free, public URL, no server, version controlled. Adding a route becomes: drop the file in, run the build, push. | Agreed |
+| 4 | 2026-08-16 | Duration is computed client-side, not taken from Garmin | Garmin's estimate is tied to Mark's fitness profile and means nothing to the rest of the group. A physics-based model driven by a viewer-controlled power setting gives each person a realistic number for themselves. | Agreed |
+| 5 | 2026-08-16 | Garmin sync method deferred | Manual export works today and unblocks everything else. The choice between bulk manual export, the Strava API and the unofficial garminconnect library can be made once the map exists and the refresh friction is actually felt. | Open, revisit after first build |
+| 6a | 2026-08-16 | Leaflet is vendored into `site/assets/`, not loaded from a CDN | One less third party that can break the page or disappear, and the site works offline and straight off disk. Costs about 150 KB in the repo. | Agreed |
+| 6b | 2026-08-16 | Rolling resistance is a viewer control, not a constant | It is the single most influential parameter for gravel and it genuinely varies by route. Hiding it behind a fixed value would make every estimate quietly wrong for half the library. | Agreed |
+| 6c | 2026-08-16 | Elevation smoothing is distance-based, not point-count-based | A fixed five-point window flattened real climbs out of sparse route-style exports. Smoothing now scales to the actual point spacing. | Agreed |
+| 6 | 2026-08-16 | Full geometry is simplified for the map, originals kept intact | A library of routes at full GPS resolution is a heavy payload on a phone. The build simplifies geometry for rendering and keeps untouched original files for download. | Agreed |
+
+| 7 | 2026-08-16 | Pace is set by typical average speed, not by watts | Riders know their average speed. Almost nobody knows their sustained power. The page now takes a target average speed, back-solves the power that makes the whole library average that figure, and applies it per gradient segment. Mark rides at about 20 km/h, which solves to roughly 195 W at 88 kg on mixed surface. Hilly routes still come out slower than the average and flat ones faster, which is the point. | Agreed |
+| 8 | 2026-08-16 | One colour per route, six hues crossed with four line styles | Mark found a single-hue map hard to read. Six hues is the largest set that clears the all-pairs colour checks on a light surface; the dark surface has a narrower usable lightness band and cannot clear them at six, so line style is doing real work there rather than being decoration. Six hues times four styles gives twenty-four stable combinations, assigned from a sorted route list so a route never changes colour when filters change. Orange is reserved for the selected route and appears in neither set. The by-duration colouring is kept as a switch, because it is still the better view for scanning a big library. | Agreed |
+| 9 | 2026-08-16 | Duration bands are the primary filter control | Clicking a band when nothing is filtered isolates it, clicking others adds them, and clicking the last surviving band restores everything so you cannot strand yourself on an empty map. This is the fastest path to the actual question, which is usually "what can we do in about three hours". | Agreed |
+
+| 10 | 2026-08-16 | Named "South Wales Gravel Routes", branded on black, white and indigo | Le Col as the reference: near-black chrome, white type, indigo #4485CB for the accent, letterspaced uppercase for the wordmark and micro-labels. Dark is the default because the brand is black-led. The indigo is chrome only. Data colour stays on the validated route palette, and orange stays reserved for the selected route, so branding never competes with the map for meaning. | Agreed |
+| 11 | 2026-08-16 | Route names inferred from geography, not from memory | Every place name comes from a GeoNames cities1000 extract clipped to south east Wales, and only counts when the route passes within 3 km. Where Mark's own name carried a landmark the gazetteer does not know (Trefil, Ynysybwl, Rhigos, Garwnant, Pontsticill, Torpantau, Llanwonno, Rhiwderin, Manmole, Dowlais Top, Mumbles) that word was kept rather than discarded. Names already in house style were tidied, not replaced. Because almost every route leaves from the same place, the start is excluded from names: it carries no information. | Agreed |
+| 12 | 2026-08-16 | Loops rotated to a common start at 51.647080, -3.205153 | Rotating a closed route's point list to begin at the nearest track point is lossless. No geometry is added, moved or removed and the distance and ascent are unchanged, the file simply begins where the group actually meets. Routes that never pass within 300 m are left alone, because connecting them means inventing road that needs a routing engine. Superseded in part by decision 13: rotation alone left the residential geometry in the file. After clipping, fifteen of twenty-six start and finish within 60 m of the point. | Superseded by 13 |
+
+| 13 | 2026-08-16 | Clipping, not rotating, is the privacy tool | Rotating a loop changes only where the point list begins. The geometry is untouched, so a route that ran up a residential street still ran up it and the published file still showed the address. Clipping removes that ground from the file. Routes are now cut to the span between their first and last visit to the meeting point, and an exclusion radius guarantees nothing within 200 m of the address survives anywhere in any file. Where a loop clipped the zone mid-ride, the seam was rotated onto the zone and the offending section cut. Nothing was invented; only leading and trailing points were deleted. | Agreed |
+
+| 14 | 2026-08-16 | Two exclusion zones, not one | A second 200 m zone at 51.617153, -3.175053 in Cwmfelinfach, where three point-to-point routes finished. The clip script takes `--avoid` more than once and applies each zone in turn. Only the three finishes touched it and nothing passed through mid-ride, so trimming ends was enough and no seam rotation was needed. Extending the routes by 200 m instead was not an option: that direction means inventing road. | Agreed |
+
+## Open items needing a decision
+
+Repository visibility. A public GitHub Pages site means the routes, and therefore the roads around home, are world readable. An unlisted-but-public URL is the usual compromise, or the repo can be private with Pages served from a paid plan. Worth a deliberate choice rather than a default.
+
+Whether route start points should be nudged or the first few hundred metres trimmed if any routes start at a home address.

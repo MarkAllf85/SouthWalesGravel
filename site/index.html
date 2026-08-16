@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en-GB" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>South Wales Gravel Routes</title>
+<meta name="theme-color" content="#0a0a0b">
+<meta name="description" content="Every gravel route in the South Wales valleys on one map. Filter by distance, climbing and how long it will actually take you.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230a0a0b'/%3E%3Cpath d='M5 23c4-1 4-9 8-10s5 6 9 4 4-8 5-9' stroke='%234485CB' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/leaflet/leaflet.css">
+<style>
+:root {
+  color-scheme: light;
+  --surface-0: #f1f2f5;
+  --surface-1: #ffffff;
+  --surface-2: #e7e9ee;
+  --border:    #d5d8df;
+  --text-primary:   #0a0a0b;
+  --text-secondary: #4a4e57;
+  --text-muted:     #787d88;
+  --brand:     #2f6db0;
+  --brand-ink: #ffffff;
+  --accent:    #eb6834;
+  --accent-ink:#ffffff;
+  --band-1: #86b6ef;
+  --band-2: #5598e7;
+  --band-3: #2a78d6;
+  --band-4: #1c5cab;
+  --band-5: #0d366b;
+  --casing: rgba(255,255,255,0.88);
+  --shadow: 0 1px 2px rgba(0,0,0,.06), 0 8px 24px rgba(0,0,0,.08);
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --surface-0: #0a0a0b;
+  --surface-1: #121316;
+  --surface-2: #1e2025;
+  --border:    #2a2d34;
+  --text-primary:   #ffffff;
+  --text-secondary: #b8bcc5;
+  --text-muted:     #7d828d;
+  --brand:     #4485cb;
+  --brand-ink: #ffffff;
+  --accent:    #d95926;
+  --accent-ink:#ffffff;
+  --band-1: #b7d3f6;
+  --band-2: #6da7ec;
+  --band-3: #3987e5;
+  --band-4: #256abf;
+  --band-5: #184f95;
+  --casing: rgba(0,0,0,0.8);
+  --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.5);
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  font: 14px/1.45 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--surface-0); color: var(--text-primary);
+  display: grid; grid-template-columns: 372px 1fr; grid-template-rows: 52px 1fr;
+  grid-template-areas: "head head" "panel map";
+  overflow: hidden;
+}
+header {
+  grid-area: head; display: flex; align-items: center; gap: 14px; padding: 0 14px;
+  background: var(--surface-1); border-bottom: 1px solid var(--border); z-index: 1200;
+  box-shadow: inset 0 3px 0 var(--brand);
+}
+.mark { display: flex; flex-direction: column; line-height: 1.05; margin: 0; }
+.mark .k1 {
+  font-size: 9.5px; font-weight: 700; letter-spacing: .22em; text-transform: uppercase;
+  color: var(--brand);
+}
+.mark .k2 {
+  font-size: 16px; font-weight: 750; letter-spacing: -.025em; color: var(--text-primary);
+  text-transform: uppercase;
+}
+header .count { color: var(--text-secondary); font-variant-numeric: tabular-nums; font-size: 13px; }
+header .spacer { flex: 1; }
+.btn {
+  font: inherit; font-size: 13px; padding: 5px 10px; border-radius: 7px;
+  border: 1px solid var(--border); background: var(--surface-1); color: var(--text-primary);
+  cursor: pointer;
+}
+.btn:hover { background: var(--surface-2); }
+.btn.primary { background: var(--brand); color: var(--brand-ink); border-color: transparent;
+  font-weight: 600; letter-spacing: .01em; }
+.btn.primary:hover { filter: brightness(1.1); }
+#menuBtn { display: none; }
+
+#panel {
+  grid-area: panel; background: var(--surface-1); border-right: 1px solid var(--border);
+  overflow-y: auto; overscroll-behavior: contain; z-index: 1100;
+}
+.section { padding: 12px 14px; border-bottom: 1px solid var(--border); }
+.section h2 {
+  font-size: 11px; text-transform: uppercase; letter-spacing: .07em;
+  color: var(--text-muted); margin: 0 0 10px; font-weight: 700; letter-spacing: .1em;
+  display: flex; justify-content: space-between; align-items: baseline; gap: 8px;
+}
+.section h2 .hint { text-transform: none; letter-spacing: 0; font-weight: 500; font-size: 11px; }
+label.field, .field { display: block; margin-bottom: 13px; }
+.field:last-child { margin-bottom: 0; }
+.field .lab {
+  display: flex; justify-content: space-between; align-items: baseline;
+  font-size: 12px; color: var(--text-secondary); margin-bottom: 6px;
+}
+.field .val { font-variant-numeric: tabular-nums; color: var(--text-primary); font-weight: 550; }
+input[type="search"] {
+  width: 100%; font: inherit; padding: 7px 9px; border-radius: 7px;
+  border: 1px solid var(--border); background: var(--surface-0); color: var(--text-primary);
+}
+.dual { position: relative; height: 22px; }
+.dual .track { position: absolute; top: 9px; left: 0; right: 0; height: 4px; border-radius: 2px; background: var(--surface-2); }
+.dual .fill  { position: absolute; top: 9px; height: 4px; border-radius: 2px; background: var(--brand); }
+.dual input[type="range"] {
+  position: absolute; top: 0; left: 0; width: 100%; height: 22px; margin: 0;
+  -webkit-appearance: none; appearance: none; background: none; pointer-events: none;
+}
+.dual input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; pointer-events: auto; width: 15px; height: 15px; border-radius: 50%;
+  background: var(--surface-1); border: 2px solid var(--brand); cursor: grab; box-shadow: 0 1px 3px rgba(0,0,0,.4);
+}
+.dual input[type="range"]::-moz-range-thumb {
+  pointer-events: auto; width: 15px; height: 15px; border-radius: 50%;
+  background: var(--surface-1); border: 2px solid var(--brand); cursor: grab;
+}
+input[type="range"].single { width: 100%; accent-color: var(--brand); }
+
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  font: inherit; font-size: 12px; padding: 4px 9px; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--border); background: var(--surface-0); color: var(--text-secondary);
+  user-select: none;
+}
+.chip[aria-pressed="true"] { background: var(--brand); border-color: transparent; color: var(--brand-ink); }
+
+/* duration bands double as a filter */
+#bands { display: flex; flex-direction: column; gap: 3px; }
+.band {
+  display: flex; align-items: center; gap: 9px; font-size: 12.5px; cursor: pointer;
+  padding: 5px 7px; border-radius: 7px; border: 1px solid transparent;
+  background: none; color: var(--text-muted); width: 100%; text-align: left; font-family: inherit;
+}
+.band:hover { background: var(--surface-2); }
+.band[aria-pressed="true"] { color: var(--text-primary); border-color: var(--brand); background: var(--surface-0); }
+.band .sw { width: 24px; height: 4px; border-radius: 2px; flex: none; opacity: .35; }
+.band[aria-pressed="true"] .sw { opacity: 1; }
+.band .n { margin-left: auto; font-variant-numeric: tabular-nums; font-size: 11.5px; color: var(--text-muted); }
+.band.zero { opacity: .45; }
+
+#list { padding: 6px; }
+.card {
+  padding: 9px 10px; border-radius: 9px; cursor: pointer; border: 1px solid transparent;
+  display: grid; grid-template-columns: 26px 1fr; gap: 9px; align-items: start;
+}
+.card:hover { background: var(--surface-2); }
+.card[aria-selected="true"] { background: var(--surface-2); border-color: var(--accent); }
+.card .sw { margin-top: 5px; }
+.card .nm { font-weight: 570; font-size: 13.5px; margin-bottom: 2px; }
+.card .meta { font-size: 12px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.card .type { font-size: 11px; color: var(--text-muted); }
+.empty { padding: 24px 14px; color: var(--text-muted); font-size: 13px; text-align: center; }
+
+#map { grid-area: map; height: 100%; width: 100%; background: var(--surface-2); }
+.leaflet-container { font: inherit; }
+
+#detail {
+  position: absolute; right: 14px; bottom: 22px; width: 420px; max-width: calc(100vw - 28px);
+  background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px;
+  box-shadow: var(--shadow); z-index: 1150; overflow: hidden; display: none;
+}
+#detail.open { display: block; }
+#detail .hd { display: flex; align-items: flex-start; gap: 8px; padding: 12px 14px 8px; }
+#detail .hd h3 { margin: 0; font-size: 15px; font-weight: 650; flex: 1; letter-spacing: -.01em; }
+#detail .close { background: none; border: none; font-size: 20px; line-height: 1; cursor: pointer; color: var(--text-muted); padding: 0 2px; }
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--border); border-block: 1px solid var(--border); }
+.stat { background: var(--surface-1); padding: 8px 10px; }
+.stat .k { font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); }
+.stat .v { font-size: 16px; font-weight: 640; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+.stat .v small { font-size: 11px; font-weight: 500; color: var(--text-secondary); }
+#profileWrap { position: relative; padding: 14px 6px 4px; }
+#profile { display: block; width: 100%; height: 110px; }
+#tip {
+  position: absolute; pointer-events: none; background: var(--surface-1); border: 1px solid var(--border);
+  border-radius: 7px; padding: 4px 8px; font-size: 12px; box-shadow: var(--shadow);
+  font-variant-numeric: tabular-nums; white-space: nowrap; display: none; z-index: 2; top: 0;
+}
+#detail .actions { display: flex; gap: 8px; padding: 10px 14px 14px; align-items: center; }
+#detail .actions a { text-decoration: none; }
+.muted { color: var(--text-muted); font-size: 12px; }
+
+@media (max-width: 860px) {
+  body { grid-template-columns: 1fr; grid-template-areas: "head" "map"; }
+  #menuBtn { display: inline-block; }
+  #panel {
+    position: fixed; top: 52px; left: 0; bottom: 0; width: min(372px, 90vw);
+    transform: translateX(-100%); transition: transform .18s ease; box-shadow: var(--shadow);
+  }
+  body.panel-open #panel { transform: none; }
+  #detail { left: 10px; right: 10px; width: auto; bottom: 10px; }
+  .stats { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+<header>
+  <button class="btn" id="menuBtn" aria-label="Toggle filters">Filters</button>
+  <h1 class="mark"><span class="k1">South Wales</span><span class="k2">Gravel Routes</span></h1>
+  <span class="count" id="count"></span>
+  <span class="spacer"></span>
+  <button class="btn" id="fitBtn">Fit view</button>
+  <button class="btn" id="themeBtn" aria-label="Toggle dark mode">Light</button>
+</header>
+
+<aside id="panel">
+  <div class="section">
+    <h2>Search</h2>
+    <input type="search" id="q" placeholder="Route name…" autocomplete="off">
+  </div>
+
+  <div class="section">
+    <h2>Duration bands <span class="hint">click to filter</span></h2>
+    <div id="bands"></div>
+  </div>
+
+  <div class="section">
+    <h2>Filters</h2>
+
+    <div class="field">
+      <div class="lab"><span>Distance</span><span class="val" id="distVal"></span></div>
+      <div class="dual" data-key="dist">
+        <div class="track"></div><div class="fill"></div>
+        <input type="range" class="lo"><input type="range" class="hi">
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="lab"><span>Estimated duration</span><span class="val" id="durVal"></span></div>
+      <div class="dual" data-key="dur">
+        <div class="track"></div><div class="fill"></div>
+        <input type="range" class="lo"><input type="range" class="hi">
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="lab"><span>Total ascent</span><span class="val" id="ascVal"></span></div>
+      <div class="dual" data-key="asc">
+        <div class="track"></div><div class="fill"></div>
+        <input type="range" class="lo"><input type="range" class="hi">
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="lab"><span>Route type</span></div>
+      <div class="chips" id="typeChips">
+        <button class="chip" data-type="loop" aria-pressed="true">Loop</button>
+        <button class="chip" data-type="out-and-back" aria-pressed="true">Out and back</button>
+        <button class="chip" data-type="point-to-point" aria-pressed="true">Point to point</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="lab"><span>Start within</span><span class="val" id="nearVal">any distance</span></div>
+      <input type="range" class="single" id="near" min="0" max="100" step="5" value="0">
+      <div class="muted">Measured from the centre of the map</div>
+    </div>
+
+    <button class="btn" id="resetBtn" style="width:100%">Reset filters</button>
+  </div>
+
+  <div class="section">
+    <h2>Your ride settings</h2>
+    <div class="field">
+      <div class="lab"><span>Typical average speed</span><span class="val" id="spdVal"></span></div>
+      <input type="range" class="single" id="spd" min="12" max="32" step="0.5" value="20">
+      <div class="muted" id="spdHint"></div>
+    </div>
+    <div class="field">
+      <div class="lab"><span>Rider plus bike and kit</span><span class="val" id="massVal"></span></div>
+      <input type="range" class="single" id="mass" min="60" max="130" step="1" value="88">
+    </div>
+    <div class="field">
+      <div class="lab"><span>Surface</span></div>
+      <div class="chips" id="surfChips">
+        <button class="chip" data-crr="0.014">Hardpack</button>
+        <button class="chip" data-crr="0.018" aria-pressed="true">Mixed</button>
+        <button class="chip" data-crr="0.024">Rough</button>
+      </div>
+    </div>
+    <div class="muted">Your average speed sets the overall pace. Mass and surface change how much the hills cost you relative to the flat, so hilly routes move further from your average than flat ones do.</div>
+  </div>
+
+  <div class="section">
+    <h2>Map colours</h2>
+    <div class="chips" id="colourChips">
+      <button class="chip" data-mode="distinct" aria-pressed="true">One per route</button>
+      <button class="chip" data-mode="duration">By duration</button>
+    </div>
+  </div>
+
+  <div id="list"></div>
+</aside>
+
+<div id="map"></div>
+
+<section id="detail" aria-live="polite">
+  <div class="hd">
+    <h3 id="dName"></h3>
+    <button class="close" id="dClose" aria-label="Close">&times;</button>
+  </div>
+  <div class="stats" id="dStats"></div>
+  <div id="profileWrap">
+    <svg id="profile" role="img" aria-label="Elevation profile"></svg>
+    <div id="tip"></div>
+  </div>
+  <div class="actions" id="dActions"></div>
+</section>
+
+<script src="assets/leaflet/leaflet.js"></script>
+<script src="data/routes.js"></script>
+<script>
+(function () {
+"use strict";
+
+var DATA = window.ROUTE_DATA || { routes: [], model: {} };
+var M = Object.assign({ crr: 0.018, cda: 0.40, rho: 1.225, drivetrain_eff: 0.97,
+                        max_descent_kph: 55, stoppage_factor: 1.06 }, DATA.model || {});
+var G = 9.80665;
+
+/* ------------------------------------------------------------------ *
+ * Colour
+ *
+ * Six hues, validated all-pairs in light mode against the data-viz
+ * palette checks. Dark mode uses the documented dark steps of the same
+ * slots; six hues cannot clear the all-pairs gate on a dark surface
+ * because the usable lightness band is too narrow, so line style does
+ * real work there. Identity is never colour alone: every route carries
+ * a matching swatch in the list and its name in a hover tooltip.
+ *
+ * Orange is deliberately absent from both sets. It is reserved for the
+ * selected route so selection always reads as "not one of the others".
+ * ------------------------------------------------------------------ */
+var HUES_LIGHT = ["#2a78d6", "#eda100", "#1baf7a", "#4a3aa7", "#e34948", "#008300"];
+var HUES_DARK  = ["#3987e5", "#c98500", "#199e70", "#9085e9", "#e66767", "#008300"];
+var DASHES     = [null, "16,6", "26,6,4,6", "6,6"];
+
+function isDark() { return document.documentElement.getAttribute("data-theme") === "dark"; }
+function hues() { return isDark() ? HUES_DARK : HUES_LIGHT; }
+
+var BANDS = [
+  { max: 1.5,      label: "under 1h 30",   varname: "--band-1" },
+  { max: 2.5,      label: "1h 30 to 2h 30", varname: "--band-2" },
+  { max: 4.0,      label: "2h 30 to 4h",   varname: "--band-3" },
+  { max: 6.0,      label: "4h to 6h",      varname: "--band-4" },
+  { max: Infinity, label: "over 6h",       varname: "--band-5" }
+];
+function bandIndex(h) { for (var i = 0; i < BANDS.length; i++) if (h < BANDS[i].max) return i; return 4; }
+function css(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+
+/* ---------- physics (mirrors scripts/build.py) ---------- */
+function speedFor(power, mass, grade, crr) {
+  var p = power * M.drivetrain_eff;
+  var theta = Math.atan(grade);
+  var resist = crr * mass * G * Math.cos(theta) + mass * G * Math.sin(theta);
+  var aero = 0.5 * M.rho * M.cda;
+  var lo = 0.05, hi = 30, mid;
+  function net(v) { return resist * v + aero * v * v * v - p; }
+  if (net(lo) > 0) return 4 / 3.6;
+  if (net(hi) < 0) return hi;
+  for (var i = 0; i < 26; i++) { mid = (lo + hi) / 2; if (net(mid) > 0) hi = mid; else lo = mid; }
+  return (lo + hi) / 2;
+}
+/* Segments are precomputed once per route so the calibration solver, which
+   evaluates the whole library dozens of times per slider move, is not
+   re-deriving gradients from the profile every pass. */
+function buildSegments(r) {
+  var p = r.profile, segs = [];
+  for (var i = 1; i < p.length; i++) {
+    var d = (p[i][0] - p[i - 1][0]) * 1000;
+    if (d > 0) segs.push([d, (p[i][1] - p[i - 1][1]) / d]);
+  }
+  return segs;
+}
+function hoursFor(r, power, mass, crr) {
+  var s = 0, cap = M.max_descent_kph / 3.6, segs = r._segs;
+  for (var i = 0; i < segs.length; i++) {
+    var v = speedFor(power, mass, segs[i][1], crr);
+    s += segs[i][0] / (v < cap ? v : cap);
+  }
+  return s / 3600 * M.stoppage_factor;
+}
+/* Back-solve the power that makes the whole library average the target speed.
+   Riders know their average speed; almost nobody knows their sustained watts. */
+function solvePower(targetKph, mass, crr) {
+  var lo = 40, hi = 600, mid;
+  function libraryAvg(p) {
+    var d = 0, t = 0;
+    for (var i = 0; i < routes.length; i++) { d += routes[i].distance_km; t += hoursFor(routes[i], p, mass, crr); }
+    return t > 0 ? d / t : 0;
+  }
+  for (var i = 0; i < 20; i++) { mid = (lo + hi) / 2; if (libraryAvg(mid) < targetKph) lo = mid; else hi = mid; }
+  return (lo + hi) / 2;
+}
+
+/* ---------- polyline ---------- */
+function decode(str, precision) {
+  var factor = Math.pow(10, precision || 5), index = 0, lat = 0, lng = 0, out = [];
+  while (index < str.length) {
+    var b, shift = 0, result = 0;
+    do { b = str.charCodeAt(index++) - 63; result |= (b & 0x1f) << shift; shift += 5; } while (b >= 0x20);
+    lat += (result & 1) ? ~(result >> 1) : (result >> 1);
+    shift = 0; result = 0;
+    do { b = str.charCodeAt(index++) - 63; result |= (b & 0x1f) << shift; shift += 5; } while (b >= 0x20);
+    lng += (result & 1) ? ~(result >> 1) : (result >> 1);
+    out.push([lat / factor, lng / factor]);
+  }
+  return out;
+}
+function hm(h) {
+  var mins = Math.round(h * 60);
+  return Math.floor(mins / 60) + "h " + String(mins % 60).padStart(2, "0") + "m";
+}
+function haversineKm(a, b) {
+  var R = 6371, t = Math.PI / 180;
+  var dLat = (b[0] - a[0]) * t, dLon = (b[1] - a[1]) * t;
+  var x = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+          Math.cos(a[0] * t) * Math.cos(b[0] * t) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  return 2 * R * Math.asin(Math.sqrt(x));
+}
+function swatchSvg(colour, dash) {
+  return '<svg class="sw" width="24" height="8" viewBox="0 0 24 8" aria-hidden="true">' +
+         '<line x1="1" y1="4" x2="23" y2="4" stroke="' + colour + '" stroke-width="3" stroke-linecap="round"' +
+         (dash ? ' stroke-dasharray="' + dash + '"' : "") + "/></svg>";
+}
+
+/* ---------- state ---------- */
+var routes = (DATA.routes || []).slice();
+var state = {
+  speed: 20, mass: 88, crr: M.crr, power: 180, q: "", near: 0,
+  colourMode: "distinct",
+  types: { "loop": 1, "out-and-back": 1, "point-to-point": 1 },
+  bands: [1, 1, 1, 1, 1]
+};
+var bounds = {}, layers = {}, selected = null, hovered = null, ready = false;
+
+/* Stable colour identity: assigned once from a sorted id list, so a route
+   keeps its colour no matter what the filters are doing. */
+routes.slice().sort(function (a, b) { return a.id < b.id ? -1 : 1; }).forEach(function (r, i) {
+  r._hue = i % HUES_LIGHT.length;
+  r._dash = Math.floor(i / HUES_LIGHT.length) % DASHES.length;
+});
+routes.forEach(function (r) { r._segs = buildSegments(r); r._pts = decode(r.geometry); });
+
+function routeColour(r) {
+  return state.colourMode === "duration" ? css(BANDS[bandIndex(r._hours)].varname) : hues()[r._hue];
+}
+function routeDash(r) { return state.colourMode === "duration" ? null : DASHES[r._dash]; }
+
+/* ---------- map ---------- */
+var map = L.map("map", { zoomControl: true, preferCanvas: true }).setView([51.63, -3.18], 10);
+var base = {
+  "CyclOSM": L.tileLayer("https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png", {
+    maxZoom: 18, subdomains: "abc",
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, tiles by <a href="https://www.cyclosm.org/">CyclOSM</a>'
+  }),
+  "OpenTopoMap": L.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png", {
+    maxZoom: 17, subdomains: "abc",
+    attribution: '&copy; OpenStreetMap contributors, SRTM | style <a href="https://opentopomap.org">OpenTopoMap</a> (CC-BY-SA)'
+  }),
+  "OSM standard": L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  }),
+  "Satellite": L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+    maxZoom: 19, attribution: 'Imagery &copy; Esri, Maxar, Earthstar Geographics'
+  })
+};
+base["CyclOSM"].addTo(map);
+L.control.layers(base, null, { position: "topright" }).addTo(map);
+
+routes.forEach(function (r) {
+  var casing = L.polyline(r._pts, { color: css("--casing"), weight: 7, opacity: 1,
+    lineCap: "round", lineJoin: "round", interactive: false });
+  var line = L.polyline(r._pts, { color: HUES_LIGHT[r._hue], weight: 3.5, opacity: .95,
+    lineCap: "round", lineJoin: "round" });
+  line.bindTooltip(r.name, { sticky: true });
+  line.on("click", function () { select(r.id, true); });
+  line.on("mouseover", function () { hovered = r.id; paintLines(); });
+  line.on("mouseout", function () { hovered = null; paintLines(); });
+  layers[r.id] = { casing: casing, line: line, group: L.layerGroup([casing, line]) };
+});
+
+/* ---------- filters ---------- */
+function extent(fn) { var v = routes.map(fn); return [Math.min.apply(null, v), Math.max.apply(null, v)]; }
+function setupDual(key, min, max, step) {
+  var el = document.querySelector('.dual[data-key="' + key + '"]');
+  var lo = el.querySelector(".lo"), hi = el.querySelector(".hi"), fill = el.querySelector(".fill");
+  [lo, hi].forEach(function (i) { i.min = min; i.max = max; i.step = step; });
+  lo.value = min; hi.value = max;
+  bounds[key] = { lo: lo, hi: hi, min: min, max: max, fill: fill };
+  function sync() {
+    if (+lo.value > +hi.value) { if (document.activeElement === lo) hi.value = lo.value; else lo.value = hi.value; }
+    var l = (+lo.value - min) / (max - min || 1), h = (+hi.value - min) / (max - min || 1);
+    fill.style.left = (l * 100) + "%"; fill.style.width = ((h - l) * 100) + "%";
+    render();
+  }
+  lo.addEventListener("input", sync); hi.addEventListener("input", sync);
+  bounds[key].sync = sync; sync();
+}
+function recalibrate() {
+  state.power = solvePower(state.speed, state.mass, state.crr);
+  routes.forEach(function (r) { r._hours = hoursFor(r, state.power, state.mass, state.crr); });
+  document.getElementById("spdHint").textContent =
+    "About " + Math.round(state.power) + " W sustained across your whole library of " + routes.length + " routes";
+}
+function initFilters() {
+  recalibrate();
+  var d = extent(function (r) { return r.distance_km; });
+  var a = extent(function (r) { return r.ascent_m; });
+  var h = extent(function (r) { return r._hours; });
+  setupDual("dist", Math.floor(d[0]), Math.ceil(d[1]), 1);
+  setupDual("asc", 0, Math.ceil(a[1] / 50) * 50, 25);
+  setupDual("dur", 0, Math.ceil(h[1] + 0.5), 0.25);
+}
+
+function passes(r) {
+  if (state.q && r.name.toLowerCase().indexOf(state.q) === -1) return false;
+  if (!state.types[r.route_type]) return false;
+  if (!state.bands[bandIndex(r._hours)]) return false;
+  if (r.distance_km < +bounds.dist.lo.value || r.distance_km > +bounds.dist.hi.value) return false;
+  if (r.ascent_m < +bounds.asc.lo.value || r.ascent_m > +bounds.asc.hi.value) return false;
+  if (r._hours < +bounds.dur.lo.value || r._hours > +bounds.dur.hi.value) return false;
+  if (state.near > 0) {
+    var c = map.getCenter();
+    if (haversineKm([c.lat, c.lng], r.start) > state.near) return false;
+  }
+  return true;
+}
+
+/* Line painting is split out so hover can repaint without rebuilding the list. */
+function paintLines() {
+  var focus = selected || hovered;
+  routes.forEach(function (r) {
+    var L2 = layers[r.id];
+    if (!map.hasLayer(L2.group)) return;
+    var isFocus = r.id === focus;
+    L2.line.setStyle({
+      color: r.id === selected ? css("--accent") : routeColour(r),
+      dashArray: routeDash(r),
+      weight: isFocus ? 5.5 : 3.5,
+      opacity: focus && !isFocus ? 0.35 : 0.95
+    });
+    L2.casing.setStyle({ color: css("--casing"), weight: isFocus ? 9 : 7,
+                         opacity: focus && !isFocus ? 0.3 : 1 });
+    if (isFocus) { L2.casing.bringToFront(); L2.line.bringToFront(); }
+  });
+}
+
+function renderBands() {
+  var counts = [0, 0, 0, 0, 0];
+  routes.forEach(function (r) { counts[bandIndex(r._hours)]++; });
+  var host = document.getElementById("bands");
+  host.innerHTML = "";
+  BANDS.forEach(function (b, i) {
+    var el = document.createElement("button");
+    el.type = "button";
+    el.className = "band" + (counts[i] ? "" : " zero");
+    el.setAttribute("aria-pressed", state.bands[i] ? "true" : "false");
+    el.innerHTML = '<span class="sw" style="background:' + css(b.varname) + '"></span>' +
+                   "<span>" + b.label + '</span><span class="n">' + counts[i] + "</span>";
+    el.addEventListener("click", function () {
+      var active = state.bands.reduce(function (a, v) { return a + v; }, 0);
+      if (active === BANDS.length) {
+        // Nothing is filtered yet, so the obvious meaning of a click is
+        // "show me just this one" rather than "hide this one".
+        state.bands = [0, 0, 0, 0, 0];
+        state.bands[i] = 1;
+      } else if (state.bands[i] && active === 1) {
+        // Clicking the last surviving band restores everything, so you can
+        // never filter yourself into an empty map with no way back.
+        state.bands = [1, 1, 1, 1, 1];
+      } else {
+        state.bands[i] = state.bands[i] ? 0 : 1;
+      }
+      renderBands(); render();
+    });
+    host.appendChild(el);
+  });
+}
+
+function render() {
+  if (!ready) return;
+  document.getElementById("distVal").textContent = bounds.dist.lo.value + " to " + bounds.dist.hi.value + " km";
+  document.getElementById("ascVal").textContent = bounds.asc.lo.value + " to " + bounds.asc.hi.value + " m";
+  document.getElementById("durVal").textContent = hm(+bounds.dur.lo.value) + " to " + hm(+bounds.dur.hi.value);
+  document.getElementById("spdVal").textContent = state.speed.toFixed(1) + " km/h";
+  document.getElementById("massVal").textContent = state.mass + " kg";
+  document.getElementById("nearVal").textContent = state.near ? "within " + state.near + " km" : "any distance";
+
+  var visible = routes.filter(passes);
+  document.getElementById("count").textContent = visible.length + " of " + routes.length + " routes";
+
+  var vis = {};
+  visible.forEach(function (r) { vis[r.id] = 1; });
+  routes.forEach(function (r) {
+    var L2 = layers[r.id];
+    if (vis[r.id]) { if (!map.hasLayer(L2.group)) L2.group.addTo(map); }
+    else if (map.hasLayer(L2.group)) map.removeLayer(L2.group);
+  });
+  paintLines();
+
+  var list = document.getElementById("list");
+  list.innerHTML = "";
+  if (!visible.length) { list.innerHTML = '<div class="empty">No routes match. Widen a filter or reset.</div>'; return; }
+  visible.sort(function (x, y) { return x._hours - y._hours; }).forEach(function (r) {
+    var el = document.createElement("div");
+    el.className = "card";
+    el.setAttribute("role", "button");
+    el.setAttribute("tabindex", "0");
+    el.setAttribute("aria-selected", r.id === selected ? "true" : "false");
+    el.innerHTML = swatchSvg(r.id === selected ? css("--accent") : routeColour(r), routeDash(r)) +
+      '<div><div class="nm"></div><div class="meta">' +
+      r.distance_km.toFixed(1) + " km &middot; " + r.ascent_m + " m &middot; " + hm(r._hours) +
+      '</div><div class="type">' + r.route_type.replace(/-/g, " ") + "</div></div>";
+    el.querySelector(".nm").textContent = r.name;
+    el.addEventListener("click", function () { select(r.id, true); });
+    el.addEventListener("mouseenter", function () { hovered = r.id; paintLines(); });
+    el.addEventListener("mouseleave", function () { hovered = null; paintLines(); });
+    el.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); select(r.id, true); }
+    });
+    list.appendChild(el);
+  });
+}
+
+/* ---------- detail ---------- */
+function stat(k, v, u) {
+  return '<div class="stat"><div class="k">' + k + '</div><div class="v">' + v +
+         (u ? ' <small>' + u + "</small>" : "") + "</div></div>";
+}
+function refreshDetail() {
+  if (!selected) return;
+  var r = routes.find(function (x) { return x.id === selected; });
+  if (!r) return;
+  document.getElementById("dStats").innerHTML =
+    stat("Distance", r.distance_km.toFixed(1), "km") +
+    stat("Ascent", r.ascent_m, "m") +
+    stat("Est. time", hm(r._hours), "") +
+    stat("Avg speed", (r.distance_km / r._hours).toFixed(1), "km/h");
+}
+function select(id, fly) {
+  selected = (selected === id) ? null : id;
+  var d = document.getElementById("detail");
+  if (!selected) {
+    d.classList.remove("open");
+    history.replaceState(null, "", location.pathname);
+    render(); return;
+  }
+  var r = routes.find(function (x) { return x.id === selected; });
+  if (!r) return;
+  history.replaceState(null, "", "?route=" + encodeURIComponent(r.id));
+  document.getElementById("dName").textContent = r.name;
+  refreshDetail();
+  var acts = [];
+  if (r.source_files.gpx) acts.push('<a class="btn primary" href="' + r.source_files.gpx + '" download>Download GPX</a>');
+  if (r.source_files.fit) acts.push('<a class="btn" href="' + r.source_files.fit + '" download>Download FIT</a>');
+  acts.push('<span class="muted" style="margin-left:auto">' +
+    r.route_type.replace(/-/g, " ") + " &middot; " + r.gradient_bands.climb_km.toFixed(1) + " km climbing</span>");
+  document.getElementById("dActions").innerHTML = acts.join("");
+  d.classList.add("open");
+  drawProfile(r);
+  if (fly) map.fitBounds(L.latLngBounds([r.bbox[0], r.bbox[1]], [r.bbox[2], r.bbox[3]]).pad(0.12));
+  render();
+}
+
+var profileRoute = null;
+function drawProfile(r) {
+  profileRoute = r;
+  var svg = document.getElementById("profile");
+  var w = svg.clientWidth || 400, h = 110, padL = 34, padR = 8, padT = 8, padB = 18;
+  var p = r.profile;
+  var ys = p.map(function (d) { return d[1]; });
+  var x1 = p[p.length - 1][0];
+  var y0 = Math.min.apply(null, ys), y1 = Math.max.apply(null, ys);
+  var padY = Math.max(10, (y1 - y0) * 0.12); y0 = Math.max(0, y0 - padY); y1 += padY;
+  function X(v) { return padL + v / (x1 || 1) * (w - padL - padR); }
+  function Y(v) { return padT + (1 - (v - y0) / (y1 - y0 || 1)) * (h - padT - padB); }
+  var line = p.map(function (d, i) { return (i ? "L" : "M") + X(d[0]).toFixed(1) + " " + Y(d[1]).toFixed(1); }).join(" ");
+  var area = line + " L" + X(x1).toFixed(1) + " " + Y(y0).toFixed(1) + " L" + X(0).toFixed(1) + " " + Y(y0).toFixed(1) + " Z";
+  var grid = "";
+  for (var i = 0; i <= 3; i++) {
+    var v = y0 + (y1 - y0) * i / 3, yy = Y(v).toFixed(1);
+    grid += '<line x1="' + padL + '" x2="' + (w - padR) + '" y1="' + yy + '" y2="' + yy + '" stroke="' + css("--border") + '" stroke-width="1"/>' +
+            '<text x="' + (padL - 6) + '" y="' + (+yy + 3.5) + '" text-anchor="end" font-size="10" fill="' + css("--text-muted") + '">' + Math.round(v) + "</text>";
+  }
+  var hue = css("--band-3");
+  svg.setAttribute("viewBox", "0 0 " + w + " " + h);
+  svg.innerHTML =
+    '<defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1">' +
+    '<stop offset="0%" stop-color="' + hue + '" stop-opacity="0.30"/>' +
+    '<stop offset="100%" stop-color="' + hue + '" stop-opacity="0.03"/></linearGradient></defs>' + grid +
+    '<path d="' + area + '" fill="url(#ag)"/>' +
+    '<path d="' + line + '" fill="none" stroke="' + hue + '" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>' +
+    '<line id="cross" x1="0" x2="0" y1="' + padT + '" y2="' + (h - padB) + '" stroke="' + css("--accent") + '" stroke-width="1.5" opacity="0"/>' +
+    '<circle id="dot" r="4" fill="' + css("--accent") + '" stroke="' + css("--surface-1") + '" stroke-width="2" opacity="0"/>' +
+    '<text x="' + padL + '" y="' + (h - 5) + '" font-size="10" fill="' + css("--text-muted") + '">0 km</text>' +
+    '<text x="' + (w - padR) + '" y="' + (h - 5) + '" text-anchor="end" font-size="10" fill="' + css("--text-muted") + '">' + x1.toFixed(1) + " km</text>";
+  svg._X = X; svg._Y = Y; svg._w = w; svg._padL = padL; svg._padR = padR;
+}
+
+var hoverMarker = null;
+(function () {
+  var svg = document.getElementById("profile"), tip = document.getElementById("tip");
+  function move(ev) {
+    if (!profileRoute) return;
+    var rect = svg.getBoundingClientRect();
+    var cx = (ev.touches ? ev.touches[0].clientX : ev.clientX) - rect.left;
+    var scale = (svg._w || rect.width) / rect.width;
+    var px = cx * scale;
+    var frac = Math.max(0, Math.min(1, (px - svg._padL) / ((svg._w || rect.width) - svg._padL - svg._padR)));
+    var p = profileRoute.profile;
+    var idx = Math.round(frac * (p.length - 1));
+    var d = p[idx], prev = p[Math.max(0, idx - 1)];
+    var seg = (d[0] - prev[0]) * 1000;
+    var grade = seg > 0 ? ((d[1] - prev[1]) / seg) * 100 : 0;
+    svg.querySelector("#cross").setAttribute("x1", svg._X(d[0]));
+    svg.querySelector("#cross").setAttribute("x2", svg._X(d[0]));
+    svg.querySelector("#cross").setAttribute("opacity", "1");
+    svg.querySelector("#dot").setAttribute("cx", svg._X(d[0]));
+    svg.querySelector("#dot").setAttribute("cy", svg._Y(d[1]));
+    svg.querySelector("#dot").setAttribute("opacity", "1");
+    tip.style.display = "block";
+    tip.innerHTML = d[0].toFixed(1) + " km &middot; " + Math.round(d[1]) + " m &middot; " + grade.toFixed(1) + "%";
+    tip.style.left = Math.min(rect.width - tip.offsetWidth - 4, Math.max(4, cx - tip.offsetWidth / 2)) + "px";
+    var pts = profileRoute._pts;
+    var ll = pts[Math.min(pts.length - 1, Math.round(frac * (pts.length - 1)))];
+    if (!hoverMarker) {
+      hoverMarker = L.circleMarker(ll, { radius: 6, color: css("--surface-1"), weight: 2,
+        fillColor: css("--accent"), fillOpacity: 1 }).addTo(map);
+    } else { hoverMarker.setLatLng(ll); if (!map.hasLayer(hoverMarker)) hoverMarker.addTo(map); }
+  }
+  function leave() {
+    tip.style.display = "none";
+    var c = svg.querySelector("#cross"), dt = svg.querySelector("#dot");
+    if (c) c.setAttribute("opacity", "0");
+    if (dt) dt.setAttribute("opacity", "0");
+    if (hoverMarker && map.hasLayer(hoverMarker)) map.removeLayer(hoverMarker);
+  }
+  svg.addEventListener("mousemove", move);
+  svg.addEventListener("touchmove", move, { passive: true });
+  svg.addEventListener("mouseleave", leave);
+  svg.addEventListener("touchend", leave);
+})();
+
+/* ---------- controls ---------- */
+document.getElementById("q").addEventListener("input", function (e) {
+  state.q = e.target.value.trim().toLowerCase(); render();
+});
+document.getElementById("typeChips").addEventListener("click", function (e) {
+  var b = e.target.closest(".chip"); if (!b) return;
+  var on = b.getAttribute("aria-pressed") === "true";
+  b.setAttribute("aria-pressed", on ? "false" : "true");
+  state.types[b.dataset.type] = on ? 0 : 1;
+  render();
+});
+document.getElementById("colourChips").addEventListener("click", function (e) {
+  var b = e.target.closest(".chip"); if (!b) return;
+  document.querySelectorAll("#colourChips .chip").forEach(function (c) { c.setAttribute("aria-pressed", "false"); });
+  b.setAttribute("aria-pressed", "true");
+  state.colourMode = b.dataset.mode;
+  render();
+});
+document.getElementById("surfChips").addEventListener("click", function (e) {
+  var b = e.target.closest(".chip"); if (!b) return;
+  document.querySelectorAll("#surfChips .chip").forEach(function (c) { c.setAttribute("aria-pressed", "false"); });
+  b.setAttribute("aria-pressed", "true");
+  state.crr = +b.dataset.crr;
+  recalibrate(); renderBands(); refreshDetail(); render();
+});
+var pending = null;
+function throttledRecalc() {
+  if (pending) return;
+  pending = requestAnimationFrame(function () {
+    pending = null; recalibrate(); renderBands(); refreshDetail(); render();
+  });
+}
+document.getElementById("spd").addEventListener("input", function (e) {
+  state.speed = +e.target.value; throttledRecalc();
+});
+document.getElementById("mass").addEventListener("input", function (e) {
+  state.mass = +e.target.value; throttledRecalc();
+});
+document.getElementById("near").addEventListener("input", function (e) {
+  state.near = +e.target.value; render();
+});
+document.getElementById("resetBtn").addEventListener("click", function () {
+  document.getElementById("q").value = ""; state.q = "";
+  state.near = 0; document.getElementById("near").value = 0;
+  Object.keys(state.types).forEach(function (k) { state.types[k] = 1; });
+  document.querySelectorAll("#typeChips .chip").forEach(function (c) { c.setAttribute("aria-pressed", "true"); });
+  state.bands = [1, 1, 1, 1, 1];
+  ["dist", "asc", "dur"].forEach(function (k) {
+    bounds[k].lo.value = bounds[k].min; bounds[k].hi.value = bounds[k].max; bounds[k].sync();
+  });
+  renderBands(); render();
+});
+document.getElementById("dClose").addEventListener("click", function () { select(selected); });
+document.getElementById("fitBtn").addEventListener("click", fitAll);
+document.getElementById("menuBtn").addEventListener("click", function () {
+  document.body.classList.toggle("panel-open");
+});
+document.getElementById("themeBtn").addEventListener("click", function () {
+  var dark = isDark();
+  document.documentElement.setAttribute("data-theme", dark ? "light" : "dark");
+  this.textContent = dark ? "Dark" : "Light";
+  renderBands(); render();
+  if (profileRoute) drawProfile(profileRoute);
+});
+map.on("moveend", function () { if (state.near > 0) render(); });
+window.addEventListener("resize", function () { if (profileRoute) drawProfile(profileRoute); });
+
+function fitAll() {
+  var vis = routes.filter(passes);
+  if (!vis.length) return;
+  var b = L.latLngBounds([]);
+  vis.forEach(function (r) { b.extend([r.bbox[0], r.bbox[1]]); b.extend([r.bbox[2], r.bbox[3]]); });
+  map.fitBounds(b.pad(0.06));
+}
+
+/* ---------- boot ---------- */
+if (!routes.length) {
+  document.getElementById("list").innerHTML =
+    '<div class="empty">No routes yet. Drop GPX exports into <code>data\\raw\\gpx</code> and run <code>python scripts\\build.py</code>.</div>';
+  document.getElementById("count").textContent = "0 routes";
+} else {
+  initFilters();
+  renderBands();
+  ready = true;
+  render();
+  fitAll();
+  var want = new URLSearchParams(location.search).get("route");
+  if (want && routes.some(function (r) { return r.id === want; })) select(want, true);
+}
+})();
+</script>
+</body>
+</html>
