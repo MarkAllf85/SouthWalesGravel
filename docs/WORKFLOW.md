@@ -53,3 +53,19 @@ Nowhere in this repository. They sit in `zones.local.txt`, which `.gitignore` ex
 `--avoid` repeats, once per zone. Clip first, then align, then name, then build. Both editing scripts are idempotent and back up to `data/raw/_pre_clip/` and `data/raw/_pre_alignment/` before touching anything. The clip script reports, and refuses to edit, any route that enters the exclusion zone in the middle of a ride and is not a closed loop, because cutting a route in half to dodge a circle produces two broken files rather than one fixed one.
 
 Run all of them before `build.py`, not after.
+
+## The audit, which runs last
+
+`scripts/audit_routes.py` checks the whole library after a build and exits non-zero if anything is wrong, so it can gate a push:
+
+    python scripts\audit_routes.py --avoid LAT,LON --avoid LAT,LON --radius 200
+
+It exists because two faults reached the published map unnoticed. One route was named after Rhiwderin but never went near it, and was a byte-identical copy of another route under a different name. Two others differed only by "Cross Keys" versus "Crosskeys", which nobody reads as a difference, and the wrong one got opened and compared against a fresh Garmin course. Neither was something `build.py` or `privacy_audit.py` was looking for.
+
+Hard failures are defects and stop the push: a name claiming a gazetteer place the line does not pass within 3 km of, raw and published copies out of step, orphans, slug collisions, `routes.js` drifting from `routes.json`, a GPX that will not parse, a name element disagreeing with itself inside one file, a `route_type` that contradicts the measured start-to-finish gap, and anything inside an exclusion zone.
+
+Advisories never fail. Riding the same valleys means routes genuinely share towns and corridors, so names sharing most of their place words, and routes lying largely on top of one another, are printed to be read rather than fixed. Use `--quiet` to suppress them.
+
+The audit can only check names it can look up. Words the gazetteer lacks, Trefil, Ynysybwl, Rhigos, Garwnant, Pontsticill, Torpantau, Llanwonno, Manmole, Dowlais Top, Mumbles, Wyllie, are listed separately as unverifiable rather than passed silently. Those still need an eye on them.
+
+`privacy-check.ps1` runs `privacy_audit.py` and then this, reading the zones from `zones.local.txt`, so the whole gate is one command.

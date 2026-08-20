@@ -1,14 +1,14 @@
 <?xml version='1.0' encoding='utf-8'?>
 <gpx xmlns="http://www.topografix.com/GPX/1/1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" creator="Garmin Connect" version="1.1" xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/11.xsd">
   <metadata>
-    <name>Gravel - Hirwaun, Pontypridd and Cross Keys Loop</name>
+    <name>Gravel - Hirwaun, Pontypridd and Crosskeys Loop</name>
     <link href="connect.garmin.com">
       <text>Garmin Connect</text>
     </link>
     <time>2025-06-14T11:41:15.000Z</time>
   </metadata>
   <trk>
-    <name>Gravel - Hirwaun, Pontypridd and Cross Keys Loop</name>
+    <name>Gravel - Hirwaun, Pontypridd and Crosskeys Loop</name>
     <trkseg>
       <trkpt lat="51.6470599360764" lon="-3.2059199642390013">
         <ele>173.15</ele>

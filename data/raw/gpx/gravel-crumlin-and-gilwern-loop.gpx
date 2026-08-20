@@ -5,14 +5,14 @@
   xmlns="http://www.topografix.com/GPX/1/1"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ns2="http://www.garmin.com/xmlschemas/GpxExtensions/v3">
   <metadata>
-    <name>Gravel - Clydach and Gilwern Loop</name>
+    <name>Gravel - Crumlin and Gilwern Loop</name>
     <link href="connect.garmin.com">
       <text>Garmin Connect</text>
     </link>
     <time>2025-12-14T08:47:22.000Z</time>
   </metadata>
   <trk>
-    <name>Gravel - Clydach and Gilwern Loop</name>
+    <name>Gravel - Crumlin and Gilwern Loop</name>
     <trkseg>
       <trkpt lat="51.66340137831867" lon="-3.159931730479002">
         <ele>161.49</ele>
