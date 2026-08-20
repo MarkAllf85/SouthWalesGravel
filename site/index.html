@@ -783,14 +783,70 @@ function select(id, fly) {
   if (r.source_files.gpx) acts.push('<a class="btn primary" href="' + r.source_files.gpx + '" download>Download GPX</a>');
   if (r.source_files.fit) acts.push('<a class="btn" href="' + r.source_files.fit + '" download>Download FIT</a>');
   acts.push('<a class="btn" href="faq.html#garmin-iphone" title="How to load this onto your Garmin">To Garmin</a>');
+  acts.push('<button class="btn" id="shareBtn" type="button" ' +
+    'title="Copy a link that opens this route">Share</button>');
   acts.push('<span class="muted" style="margin-left:auto">' +
     r.route_type.replace(/-/g, " ") + " &middot; " + r.gradient_bands.climb_km.toFixed(1) + " km climbing</span>");
   document.getElementById("dActions").innerHTML = acts.join("");
+  var sb = document.getElementById("shareBtn");
+  if (sb) sb.addEventListener("click", function () { shareRoute(r, sb); });
   d.classList.add("open");
   drawProfile(r);
   if (fly) map.fitBounds(L.latLngBounds([r.bbox[0], r.bbox[1]], [r.bbox[2], r.bbox[3]]),
                        { padding: [24, 24] });
   render();
+}
+
+/* Selecting a route already rewrites the address bar to ?route=<id>, and the
+   page reads that back on load, so the deep link has always worked. What was
+   missing was any sign that it existed: you had to notice the URL had changed
+   and copy it out of the address bar, which on a phone is most of a minute.
+
+   Only the route id travels. Estimated time is deliberately computed from the
+   viewer's own speed, mass and surface, so pinning your settings into the link
+   would quietly overwrite theirs and hand them a number that is not theirs.
+   They see the same route and their own time, which is the intent.
+
+   This does not reopen decision 17. That rejected the Web Share API for handing
+   over the GPX file, because GPX is not among the shareable MIME types. Sharing
+   a URL is a different call with no such restriction. */
+function shareRoute(r, btn) {
+  var url = location.href;
+
+  // On a phone this opens the native sheet, which is the single tap that makes
+  // the feature worth having. A dismissed sheet rejects the promise and is not
+  // an error anyone needs telling about.
+  if (navigator.share) {
+    navigator.share({ title: r.name, url: url }).catch(function () {});
+    return;
+  }
+
+  var original = btn.textContent;
+  function say(msg) {
+    btn.textContent = msg;
+    setTimeout(function () { btn.textContent = original; }, 1800);
+  }
+  function legacyCopy() {
+    // execCommand is deprecated but still the only route in a non-secure
+    // context, which is exactly what opening index.html off disk gives you.
+    var ta = document.createElement("textarea");
+    ta.value = url;
+    ta.setAttribute("readonly", "");
+    ta.style.cssText = "position:fixed;top:-1000px;opacity:0";
+    document.body.appendChild(ta);
+    ta.select();
+    var ok = false;
+    try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+    document.body.removeChild(ta);
+    btn.focus();
+    say(ok ? "Link copied" : "Copy from the address bar");
+  }
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(function () { say("Link copied"); }, legacyCopy);
+  } else {
+    legacyCopy();
+  }
 }
 
 var profileRoute = null;
