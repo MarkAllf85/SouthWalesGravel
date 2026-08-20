@@ -414,7 +414,13 @@ var G = 9.80665;
  * ------------------------------------------------------------------ */
 var HUES_LIGHT = ["#2a78d6", "#eda100", "#1baf7a", "#4a3aa7", "#e34948", "#008300"];
 var HUES_DARK  = ["#3987e5", "#c98500", "#199e70", "#9085e9", "#e66767", "#008300"];
-var DASHES     = [null, "16,6", "26,6,4,6", "6,6"];
+
+/* Six line styles, the classic drafting linetypes, chosen because they stay
+   apart from each other at map line widths. Four used to be enough: six hues
+   by four dashes is twenty-four combinations and the library held twenty-six
+   routes, so only two collided. At forty routes a fourth of the library was
+   drawing itself in a style another route already owned. */
+var DASHES = [null, "6,6", "18,7", "1.5,6", "20,6,3,6", "14,5,3,5,3,5"];
 
 function isDark() { return document.documentElement.getAttribute("data-theme") === "dark"; }
 function hues() { return isDark() ? HUES_DARK : HUES_LIGHT; }
@@ -515,12 +521,49 @@ var state = {
 };
 var bounds = {}, layers = {}, selected = null, hovered = null, ready = false;
 
-/* Stable colour identity: assigned once from a sorted id list, so a route
-   keeps its colour no matter what the filters are doing. */
-routes.slice().sort(function (a, b) { return a.id < b.id ? -1 : 1; }).forEach(function (r, i) {
-  r._hue = i % HUES_LIGHT.length;
-  r._dash = Math.floor(i / HUES_LIGHT.length) % DASHES.length;
-});
+/* Stable colour identity: assigned once from a sorted id list, so a route keeps
+   its colour no matter what the filters are doing. Reassigning among only the
+   visible routes would give every route a unique style at all times, but the
+   style would then change as you moved a slider, and a route you had already
+   picked out would become a different colour underneath you.
+
+   Six hues by six dashes is thirty-six combinations against forty routes, so
+   four pairs must still share. Which four is chosen rather than left to the
+   index: each route takes the least-used combination, and among equally used
+   ones the combination whose existing owners lie furthest away. Two routes
+   sharing a style therefore sit in different valleys instead of overlapping in
+   the same one, which is the only place the ambiguity would actually bite. */
+(function assignStyles() {
+  var combos = [];
+  for (var h = 0; h < HUES_LIGHT.length; h++)
+    for (var d = 0; d < DASHES.length; d++) combos.push({ hue: h, dash: d, owners: [] });
+
+  /* Footprint, not centre. Comparing centres alone would call a 181 km loop and
+     a 41 km one that sits inside it "far apart" because their middles differ.
+     Subtracting both bounding radii approximates the gap between the two
+     footprints and goes negative when one encloses the other. */
+  function foot(r) {
+    var c = [(r.bbox[0] + r.bbox[2]) / 2, (r.bbox[1] + r.bbox[3]) / 2];
+    return { c: c, rad: haversineKm([r.bbox[0], r.bbox[1]], [r.bbox[2], r.bbox[3]]) / 2 };
+  }
+  function gapKm(a, b) { return haversineKm(a.c, b.c) - a.rad - b.rad; }
+
+  routes.slice().sort(function (a, b) { return a.id < b.id ? -1 : 1; }).forEach(function (r) {
+    var f = foot(r), best = null, bestKey = null;
+    combos.forEach(function (k) {
+      var far = Infinity;
+      k.owners.forEach(function (o) { far = Math.min(far, gapKm(f, o)); });
+      // fewest owners wins; ties go to the combination whose owners sit furthest off
+      var key = [k.owners.length, -far];
+      if (!best || key[0] < bestKey[0] || (key[0] === bestKey[0] && key[1] < bestKey[1])) {
+        best = k; bestKey = key;
+      }
+    });
+    best.owners.push(f);
+    r._hue = best.hue;
+    r._dash = best.dash;
+  });
+})();
 routes.forEach(function (r) { r._segs = buildSegments(r); r._pts = decode(r.geometry); });
 
 function routeColour(r) {
