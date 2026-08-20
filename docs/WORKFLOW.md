@@ -68,4 +68,16 @@ Advisories never fail. Riding the same valleys means routes genuinely share town
 
 The audit can only check names it can look up. Words the gazetteer lacks, Trefil, Ynysybwl, Rhigos, Garwnant, Pontsticill, Torpantau, Llanwonno, Manmole, Dowlais Top, Mumbles, Wyllie, are listed separately as unverifiable rather than passed silently. Those still need an eye on them.
 
-`privacy-check.ps1` runs `privacy_audit.py` and then this, reading the zones from `zones.local.txt`, so the whole gate is one command.
+## Colour contrast
+
+`scripts/contrast_check.py` checks the site's colour tokens against WCAG 2.2, 4.5:1 for normal text and 3:1 for large text and meaningful graphics. It reads both `:root` blocks straight out of `site/index.html` and needs no arguments.
+
+Six pairings failed when it was first written. Muted text sat at 3.40:1 on the card hover state in the light theme and 4.23:1 in the dark, white type on the accent orange reached only 3.20:1, and white on the dark-theme indigo 3.84:1. A dark theme with a light theme behind a toggle doubles the pairings, and the failures were all in states you have to hover or select to see, which is why nobody spotted them by eye.
+
+Two of those needed the palette left alone rather than adjusted. The indigo and the orange are the brand, so instead of moving them, `--accent-ink` became near-black on orange, and a separate `--brand-fill` token carries white type on the darker indigo step while `--brand` stays exactly as it was for lines and the wordmark.
+
+The pairing table in that script is maintained by hand. Inferring pairings from the CSS would mean writing a small and wrong CSS engine, so if you change what sits on top of what, add it to the list.
+
+## One command before pushing
+
+`privacy-check.ps1` runs the exclusion audit, the library audit and the contrast check in turn, reading the zones from `zones.local.txt`, and tells you in plain terms whether to push. It exits non-zero if any of the three fails.
