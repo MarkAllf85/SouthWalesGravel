@@ -29,7 +29,13 @@ import re
 import sys
 from pathlib import Path
 
-INDEX = Path(__file__).resolve().parent.parent / "site" / "index.html"
+SITE = Path(__file__).resolve().parent.parent / "site"
+
+# Both pages carry their own copy of the token block. Checking only index.html
+# is how faq.html kept a failing muted grey and a failing primary button through
+# a pass that was supposed to have fixed exactly those two things. Any new page
+# with its own :root belongs in this list on the day it is written.
+PAGES = ["index.html", "faq.html"]
 
 # (foreground token, background token, where it appears, is it large text or a graphic)
 PAIRINGS = [
@@ -44,6 +50,7 @@ PAIRINGS = [
     ("accent-ink",     "accent",    "selected route badge", False),
     ("brand",          "surface-2", "slider fill against its track", True),
     ("accent",         "surface-1", "selected route accent border", True),
+    ("brand",          "surface-0", "links in running text on the FAQ", False),
 ]
 
 
@@ -63,10 +70,10 @@ def contrast(a, b):
     return (max(la, lb) + 0.05) / (min(la, lb) + 0.05)
 
 
-def read_tokens(src, selector):
+def read_tokens(src, selector, page):
     m = re.search(re.escape(selector) + r"\s*\{(.*?)\n\}", src, re.S)
     if not m:
-        raise SystemExit(f"could not find the {selector} block in site/index.html")
+        raise SystemExit(f"could not find the {selector} block in site/{page}")
     return dict(re.findall(r"--([a-z0-9-]+):\s*(#[0-9a-fA-F]{6})", m.group(1)))
 
 
@@ -75,29 +82,34 @@ def main():
     ap.add_argument("--verbose", action="store_true", help="print passing pairs too")
     args = ap.parse_args()
 
-    src = INDEX.read_text(encoding="utf-8")
-    themes = [("light", read_tokens(src, ":root")),
-              ("dark", read_tokens(src, ':root[data-theme="dark"]'))]
-
     failures = []
-    for label, tokens in themes:
-        print(f"\n{label.upper()} THEME")
-        missing = {t for pair in PAIRINGS for t in pair[:2]} - set(tokens)
-        if missing:
-            print(f"  note: token(s) not defined in this theme, skipped: {sorted(missing)}")
-        for fg, bg, where, large in PAIRINGS:
-            if fg not in tokens or bg not in tokens:
-                continue
-            r = contrast(tokens[fg], tokens[bg])
-            need = 3.0 if large else 4.5
-            ok = r >= need
-            if not ok:
-                failures.append(f"{label}: --{fg} on --{bg} is {r:.2f}:1, needs {need}:1 ({where})")
-            if args.verbose or not ok:
-                print(f"  {'ok' if ok else 'FAIL':<5}{r:5.2f}:1  need {need}  "
-                      f"--{fg} on --{bg}   {where}")
-        if not args.verbose and not any(f.startswith(label) for f in failures):
-            print("  all pairings pass")
+    checked = 0
+    for page in PAGES:
+        path = SITE / page
+        if not path.exists():
+            print(f"\n{page}: not found, skipped")
+            continue
+        src = path.read_text(encoding="utf-8")
+        print(f"\n{'=' * 60}\n{page}\n{'=' * 60}")
+        for label, selector in (("light", ":root"), ("dark", ':root[data-theme="dark"]')):
+            tokens = read_tokens(src, selector, page)
+            print(f"  {label.upper()} THEME")
+            before = len(failures)
+            for fg, bg, where, large in PAIRINGS:
+                if fg not in tokens or bg not in tokens:
+                    continue   # a page legitimately need not define every token
+                checked += 1
+                r = contrast(tokens[fg], tokens[bg])
+                need = 3.0 if large else 4.5
+                ok = r >= need
+                if not ok:
+                    failures.append(f"{page} {label}: --{fg} on --{bg} is "
+                                    f"{r:.2f}:1, needs {need}:1 ({where})")
+                if args.verbose or not ok:
+                    print(f"    {'ok' if ok else 'FAIL':<5}{r:5.2f}:1  need {need}  "
+                          f"--{fg} on --{bg}   {where}")
+            if not args.verbose and len(failures) == before:
+                print("    all pairings pass")
 
     print()
     if failures:
@@ -105,7 +117,7 @@ def main():
             print(f"  FAIL  {f}")
         print(f"\n{len(failures)} contrast failure(s).")
         return 1
-    print(f"PASS. {len(PAIRINGS) * 2} pairing(s) checked across both themes.")
+    print(f"PASS. {checked} pairing(s) checked across {len(PAGES)} page(s) and both themes.")
     return 0
 
 
