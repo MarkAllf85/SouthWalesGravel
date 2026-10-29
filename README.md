@@ -33,7 +33,7 @@ After adding or removing course files, run `python scripts\\build.py` and reload
 
 Live at https://markallf85.github.io/SouthWalesGravel/
 
-Sixty-two routes, 4,336 km and 57,351 m of climbing. Fifty-three loops and nine point-to-point. Shortest is 10.9 km, longest 181.7 km. Coverage reaches west to Glyncorrwg and the Afan valley, north over the Merthyr and Talybont uplands, and east across the Wye into the Forest of Dean. Seven routes sit outside South Wales: five around Barmouth, Dolgellau and Trawsfynydd, and two at Llyn Brenig.
+Sixty-two routes, 4,329 km and 57,279 m of climbing. Fifty-three loops and nine point-to-point. Shortest is 10.9 km, longest 181.7 km. Coverage reaches west to Glyncorrwg and the Afan valley, north over the Merthyr and Talybont uplands, and east across the Wye into the Forest of Dean. Seven routes sit outside South Wales: five around Barmouth, Dolgellau and Trawsfynydd, and two at Llyn Brenig.
 
 Twenty-nine routes start and finish at the public meeting point. Three 200 m exclusion zones are enforced across every published file; nothing comes within 203 m of any of them. See `docs/DECISIONS.md` entries 13 and 14, and re-run the audit in `docs/WORKFLOW.md` after any change to the route files.
 

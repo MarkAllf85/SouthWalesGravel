@@ -79,6 +79,84 @@ REGIONS = [
 DEFAULT_REGION = ("south-wales", "South Wales")
 
 
+# Variants: a route is shown as a variant of a longer one in the same region
+# when at least VARIANT_MIN_COVER of its line lies within VARIANT_TOL_M of the
+# longer route, and the longer one is no more than VARIANT_MAX_RATIO times its
+# length (beyond that it is a section of a bigger ride, not another version of
+# the same one). One level only: a route with variants is never itself a
+# variant. Candidates are taken most-alike first, measured by how much of the
+# parent the shorter route covers, so the closest pairs win.
+VARIANT_TOL_M = 60.0
+VARIANT_MIN_COVER = 0.85
+VARIANT_MAX_RATIO = 2.0
+
+ROUTE_DATES = ROOT / "data" / "route_dates.json"   # id -> date first published
+
+
+def _resample(latlon, step_m=30.0):
+    out, acc = [latlon[0]], 0.0
+    for a, b in zip(latlon, latlon[1:]):
+        acc += haversine(a, b)
+        if acc >= step_m:
+            out.append(b)
+            acc = 0.0
+    out.append(latlon[-1])
+    return out
+
+
+class _Grid:
+    CELL = 0.001
+
+    def __init__(self, pts):
+        self.g = {}
+        for p in pts:
+            self.g.setdefault(self.key(p), []).append(p)
+
+    def key(self, p):
+        return int(p[0] / self.CELL), int(p[1] / self.CELL * 0.62)
+
+    def near(self, p, tol):
+        i, j = self.key(p)
+        for di in (-1, 0, 1):
+            for dj in (-1, 0, 1):
+                for q in self.g.get((i + di, j + dj), ()):
+                    if haversine(p, q) <= tol:
+                        return True
+        return False
+
+
+def assign_variants(routes, latlon_by_id):
+    rs = {i: _resample(ll) for i, ll in latlon_by_id.items()}
+    grids = {i: _Grid(v) for i, v in rs.items()}
+
+    def cover(a, b):
+        return sum(1 for p in rs[a] if grids[b].near(p, VARIANT_TOL_M)) / len(rs[a])
+
+    by_id = {r["id"]: r for r in routes}
+    cands = []
+    for a in routes:
+        for b in routes:
+            if (a is b or a["region"] != b["region"]
+                    or b["distance_km"] <= a["distance_km"]
+                    or b["distance_km"] > VARIANT_MAX_RATIO * a["distance_km"]):
+                continue
+            # cheap reject before the point test: footprints must overlap
+            if (a["bbox"][0] > b["bbox"][2] or a["bbox"][2] < b["bbox"][0]
+                    or a["bbox"][1] > b["bbox"][3] or a["bbox"][3] < b["bbox"][1]):
+                continue
+            c = cover(a["id"], b["id"])
+            if c >= VARIANT_MIN_COVER:
+                cands.append((cover(b["id"], a["id"]), c, a["id"], b["id"]))
+    parents, children = set(), set()
+    for _rev, _c, a, b in sorted(cands, reverse=True):
+        if a in children or a in parents or b in children:
+            continue
+        by_id[a]["variant_of"] = b
+        children.add(a)
+        parents.add(b)
+    return len(children)
+
+
 def region_for(latlon):
     for key, _label, test in REGIONS:
         if sum(1 for la, lo in latlon if test(la, lo)) > len(latlon) / 2:
@@ -461,6 +539,7 @@ def build(demo=False):
     routes = []
     warnings = []
     seen_slugs = {}
+    latlon_by_id = {}
 
     def register(name, points, gpx_path=None, fit_path=None):
         if not points or len(points) < 2:
@@ -474,6 +553,7 @@ def build(demo=False):
             seen_slugs[slug] = 1
 
         stats = compute_stats(points)
+        latlon_by_id[slug] = [(p[0], p[1]) for p in points]
         sources = {}
         if gpx_path:
             dest = SITE_GPX / f"{slug}.gpx"
@@ -515,6 +595,21 @@ def build(demo=False):
 
     routes.sort(key=lambda r: r["distance_km"])
 
+    n_var = assign_variants(routes, latlon_by_id)
+
+    # First-published dates drive the "New" badge. A route not in the file is
+    # new today; entries for routes that no longer exist are dropped, so a
+    # rename shows as new, which is honest enough for a badge.
+    try:
+        dates = json.loads(ROUTE_DATES.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        dates = {}
+    today = datetime.now(timezone.utc).date().isoformat()
+    for r in routes:
+        r["added"] = dates.get(r["id"]) or today
+    ROUTE_DATES.write_text(json.dumps({r["id"]: r["added"] for r in sorted(routes, key=lambda r: r["id"])},
+                                      indent=1) + "\n", encoding="utf-8")
+
     # Flag near-identical routes. Garmin accumulates duplicates when a course is
     # copied and renamed, and two of the same line on the map is just noise.
     for i, a in enumerate(routes):
@@ -543,7 +638,7 @@ def build(demo=False):
         encoding="utf-8",
     )
 
-    print(f"Built {len(routes)} route(s) -> site/data/routes.json")
+    print(f"Built {len(routes)} route(s) -> site/data/routes.json, {n_var} shown as variants")
     for r in routes:
         print(f"  {r['id']:<34} {r['distance_km']:>6.1f} km  {r['ascent_m']:>5} m  "
               f"{r['estimated_hours_ref']:>5.2f} h  {r['route_type']:<14} "

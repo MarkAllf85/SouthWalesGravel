@@ -186,6 +186,23 @@ input[type="range"].single { width: 100%; accent-color: var(--brand); }
 .card .nm { font-weight: 570; font-size: 13.5px; margin-bottom: 2px; }
 .card .meta { font-size: 12px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
 .card .type { font-size: 11px; color: var(--text-muted); }
+.card.variant { margin-left: 18px; }
+.card .badge { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 999px;
+  font-size: 10.5px; font-weight: 600; letter-spacing: .02em; vertical-align: 1px;
+  background: var(--brand-fill); color: var(--brand-ink); }
+/* Leaflet's own controls, brought onto the page tokens. Without this the zoom
+   buttons and the layer switcher are the only white panels in a dark UI. */
+.leaflet-container .leaflet-bar, .leaflet-container .leaflet-control-layers {
+  border: 1px solid var(--border); border-radius: 8px; box-shadow: var(--shadow);
+  background: var(--surface-1); color: var(--text-primary); }
+.leaflet-container .leaflet-bar a { background: var(--surface-1); color: var(--text-primary);
+  border-bottom-color: var(--border); }
+.leaflet-container .leaflet-bar a:hover, .leaflet-container .leaflet-bar a:focus { background: var(--surface-2); }
+.leaflet-container .leaflet-bar a.leaflet-disabled { background: var(--surface-1); color: var(--text-muted); }
+.leaflet-container .leaflet-control-layers-expanded { padding: 8px 12px 8px 8px; }
+.leaflet-container .leaflet-control-layers label { font-size: 13px; }
+.leaflet-container .leaflet-control-layers input { accent-color: var(--brand); }
+:root[data-theme="dark"] .leaflet-control-layers-toggle { filter: invert(1); }
 .empty { padding: 24px 14px; color: var(--text-muted); font-size: 13px; text-align: center; }
 
 #map { grid-area: map; height: 100%; width: 100%; background: var(--surface-2); }
@@ -761,17 +778,40 @@ function render() {
   var list = document.getElementById("list");
   list.innerHTML = "";
   if (!visible.length) { list.innerHTML = '<div class="empty">No routes match. Widen a filter or reset.</div>'; return; }
-  visible.sort(function (x, y) { return x._hours - y._hours; }).forEach(function (r) {
+  /* Variants sit indented under their parent when both are showing. If the
+     parent is filtered out, the variant stands on its own in duration order. */
+  visible.sort(function (x, y) { return x._hours - y._hours; });
+  var kids = {}, ordered = [];
+  visible.forEach(function (r) {
+    if (r.variant_of && vis[r.variant_of]) (kids[r.variant_of] = kids[r.variant_of] || []).push(r);
+  });
+  visible.forEach(function (r) {
+    if (r.variant_of && vis[r.variant_of]) return;
+    ordered.push(r);
+    (kids[r.id] || []).forEach(function (k) { ordered.push(k); });
+  });
+  var NEW_MS = 30 * 864e5, now = Date.now();
+  ordered.forEach(function (r) {
+    var isKid = !!(r.variant_of && vis[r.variant_of]);
+    var nKids = (kids[r.id] || []).length;
+    var isNew = r.added && now - Date.parse(r.added + "T00:00:00Z") < NEW_MS;
     var el = document.createElement("div");
-    el.className = "card";
+    el.className = isKid ? "card variant" : "card";
     el.setAttribute("role", "button");
     el.setAttribute("tabindex", "0");
     el.setAttribute("aria-selected", r.id === selected ? "true" : "false");
     el.innerHTML = swatchSvg(r.id === selected ? css("--accent") : routeColour(r), routeDash(r)) +
       '<div><div class="nm"></div><div class="meta">' +
       r.distance_km.toFixed(1) + " km &middot; " + r.ascent_m + " m &middot; " + hm(r._hours) +
-      '</div><div class="type">' + r.route_type.replace(/-/g, " ") + "</div></div>";
+      '</div><div class="type">' + (isKid ? "variant &middot; " : "") + r.route_type.replace(/-/g, " ") +
+      (nKids ? " &middot; " + nKids + (nKids > 1 ? " variants" : " variant") + " below" : "") + "</div></div>";
     el.querySelector(".nm").textContent = r.name;
+    if (isNew) {
+      var bd = document.createElement("span");
+      bd.className = "badge"; bd.textContent = "New";
+      bd.title = "Added in the last 30 days";
+      el.querySelector(".nm").appendChild(bd);
+    }
     el.addEventListener("click", function () { select(r.id, true); });
     el.addEventListener("mouseenter", function () { hovered = r.id; paintLines(); });
     el.addEventListener("mouseleave", function () { hovered = null; paintLines(); });

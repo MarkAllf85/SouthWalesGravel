@@ -77,6 +77,12 @@ Raw activities carry timestamps and heart rate and are never committed; the chec
 
 `region` is one of `south-wales`, `wye-dean` or `north-wales`, assigned in `build.py` by where the majority of a route's points lie (north of 52.3, or east of -2.80). The list of regions and their labels travels in `routes.json` as `regions`, so the page builds its chips from data. `meeting_point` also travels in the payload; the "Start within" filter measures from it unless the viewer asks for their own location.
 
+## Variants and dates
+
+`variant_of` is set on a route when at least 85% of its line lies within 60 m of a longer route in the same region that is no more than twice its length. One level only, closest pairs first. The page lists a variant indented under its parent when both pass the filters. Nothing about the variant's id, file or deep link changes. Thresholds are `VARIANT_*` in `build.py`.
+
+`added` is the date a route was first published, read from `data/route_dates.json`, which `build.py` maintains: a route missing from the file is stamped with today's date. It was seeded on 2026-10-29 from the repository history, following renames. The page shows a "New" badge for 30 days after that date.
+
 ## Route identity
 
 The `id` is a slug derived from the course name and must stay stable, because it will appear in shareable deep links to individual routes. If a route is renamed in Garmin, the slug should be pinned rather than regenerated.
