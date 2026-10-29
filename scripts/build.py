@@ -64,6 +64,27 @@ STOPPAGE_FACTOR = 1.06   # gates, junctions, regrouping
 
 EARTH_R = 6371000.0
 
+# The public meeting point. Every route from home starts and finishes here, so
+# it is public whatever the docs say; the page measures "Start within" from it.
+MEETING_POINT = (51.647080, -3.205153)
+
+# Regions, decided by where most of a route's points lie. Checked against the
+# library on 2026-10-29: every route falls 100% or 0% on one side of each line
+# except Newport, Tintern and Lydbrook (67% east of the Wye line), so the
+# majority rule is not doing any fine judgement. First match wins.
+REGIONS = [
+    ("north-wales", "North Wales", lambda lat, lon: lat > 52.3),
+    ("wye-dean", "Wye and Forest of Dean", lambda lat, lon: lon > -2.80),
+]
+DEFAULT_REGION = ("south-wales", "South Wales")
+
+
+def region_for(latlon):
+    for key, _label, test in REGIONS:
+        if sum(1 for la, lo in latlon if test(la, lo)) > len(latlon) / 2:
+            return key
+    return DEFAULT_REGION[0]
+
 
 # ---------------------------------------------------------------------------
 # Geometry helpers
@@ -404,6 +425,7 @@ def compute_stats(points):
         "min_elevation_m": int(round(min(eles))),
         "is_loop": is_loop,
         "route_type": route_type,
+        "region": region_for(latlon),
         "start": [round(latlon[0][0], 6), round(latlon[0][1], 6)],
         "end": [round(latlon[-1][0], 6), round(latlon[-1][1], 6)],
         "bbox": [round(min(lats), 6), round(min(lons), 6), round(max(lats), 6), round(max(lons), 6)],
@@ -507,6 +529,9 @@ def build(demo=False):
         "reference_rider": {"power_w": REF_POWER_W, "mass_kg": REF_MASS_KG},
         "model": {"crr": CRR, "cda": CDA, "rho": RHO, "drivetrain_eff": DRIVETRAIN_EFF,
                   "max_descent_kph": MAX_DESCENT_KPH, "stoppage_factor": STOPPAGE_FACTOR},
+        "meeting_point": list(MEETING_POINT),
+        # display order: the home region first, then outward
+        "regions": [list(DEFAULT_REGION)] + [[k, label] for k, label, _t in reversed(REGIONS)],
         "routes": routes,
     }
 

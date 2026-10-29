@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>South Wales Gravel Routes</title>
 <meta name="theme-color" content="#0a0a0b">
-<meta name="description" content="Every gravel route in the South Wales valleys on one map. Filter by distance, climbing and how long it will actually take you.">
+<meta name="description" content="Gravel routes across the South Wales valleys, the Wye and Forest of Dean, and North Wales, on one map. Filter by region, distance, climbing and how long it will actually take you.">
 
 <!-- Link preview. Absolute URLs: scrapers do not resolve relative paths, and a
      relative og:image is the usual reason a card comes back blank. The image is
@@ -16,7 +16,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="South Wales Gravel Routes">
 <meta property="og:title" content="South Wales Gravel Routes">
-<meta property="og:description" content="Every gravel route across the valleys and the Wye, on one map. Filter by distance, climbing and how long it will actually take you.">
+<meta property="og:description" content="Gravel routes across the valleys, the Wye and North Wales, on one map. Filter by distance, climbing and how long it will actually take you.">
 <meta property="og:url" content="https://markallf85.github.io/SouthWalesGravel/">
 <meta property="og:image" content="https://markallf85.github.io/SouthWalesGravel/assets/share-card.png">
 <meta property="og:image:type" content="image/png">
@@ -347,10 +347,19 @@ input[type="range"].single { width: 100%; accent-color: var(--brand); }
     </div>
 
     <div class="field">
+      <div class="lab"><span>Region</span></div>
+      <div class="chips" id="regionChips" role="group" aria-label="Region"></div>
+    </div>
+
+    <div class="field">
       <div class="lab"><span>Start within</span><span class="val" id="nearVal">any distance</span></div>
       <input type="range" class="single" id="near" min="0" max="100" step="5" value="0"
-             aria-label="Start within this many kilometres of the centre of the map">
-      <div class="muted">Measured from the centre of the map</div>
+             aria-label="Start within this many kilometres of the chosen point">
+      <div class="chips" id="nearFrom" role="group" aria-label="Measure the start distance from" style="margin-top:8px">
+        <button class="chip" data-from="meet" aria-pressed="true">Meeting point</button>
+        <button class="chip" data-from="me" aria-pressed="false">My location</button>
+      </div>
+      <div class="muted" id="nearNote" aria-live="polite">Measured from the group meeting point</div>
     </div>
 
     <button class="btn" id="resetBtn" style="width:100%">Reset filters</button>
@@ -535,6 +544,7 @@ var state = {
   speed: 20, mass: 88, crr: M.crr, power: 180, q: "", near: 0,
   colourMode: "distinct",
   types: { "loop": 1, "out-and-back": 1, "point-to-point": 1 },
+  regions: {}, nearFrom: "meet", origin: DATA.meeting_point || null,
   bands: [1, 1, 1, 1, 1]
 };
 var bounds = {}, layers = {}, selected = null, hovered = null, ready = false;
@@ -666,9 +676,9 @@ function passes(r) {
   if (r.distance_km < +bounds.dist.lo.value || r.distance_km > +bounds.dist.hi.value) return false;
   if (r.ascent_m < +bounds.asc.lo.value || r.ascent_m > +bounds.asc.hi.value) return false;
   if (r._hours < +bounds.dur.lo.value || r._hours > +bounds.dur.hi.value) return false;
-  if (state.near > 0) {
-    var c = map.getCenter();
-    if (haversineKm([c.lat, c.lng], r.start) > state.near) return false;
+  if (r.region && state.regions[r.region] === 0) return false;
+  if (state.near > 0 && state.origin) {
+    if (haversineKm(state.origin, r.start) > state.near) return false;
   }
   return true;
 }
@@ -960,6 +970,58 @@ document.getElementById("typeChips").addEventListener("click", function (e) {
   state.types[b.dataset.type] = on ? 0 : 1;
   render();
 });
+/* Regions come from the data, so a new region needs no page change. A region
+   with no routes gets no chip. */
+(function regionChips() {
+  var box = document.getElementById("regionChips");
+  (DATA.regions || []).forEach(function (rg) {
+    if (!routes.some(function (r) { return r.region === rg[0]; })) return;
+    state.regions[rg[0]] = 1;
+    var b = document.createElement("button");
+    b.className = "chip"; b.dataset.region = rg[0]; b.textContent = rg[1];
+    b.setAttribute("aria-pressed", "true");
+    box.appendChild(b);
+  });
+  if (!box.children.length) box.parentNode.style.display = "none";
+  box.addEventListener("click", function (e) {
+    var b = e.target.closest(".chip"); if (!b) return;
+    var on = b.getAttribute("aria-pressed") === "true";
+    b.setAttribute("aria-pressed", on ? "false" : "true");
+    state.regions[b.dataset.region] = on ? 0 : 1;
+    render();
+  });
+})();
+
+/* "Start within" measures from the meeting point by default, or from the
+   viewer's own position if they ask. The position is read once, held in a
+   variable for this page view and never sent or stored anywhere. */
+function setNearFrom(mode, note) {
+  state.nearFrom = mode;
+  document.querySelectorAll("#nearFrom .chip").forEach(function (c) {
+    c.setAttribute("aria-pressed", c.dataset.from === mode ? "true" : "false");
+  });
+  if (mode === "meet") state.origin = DATA.meeting_point || null;
+  document.getElementById("nearNote").textContent = note ||
+    (mode === "me" ? "Measured from your location, which stays on this device"
+                   : "Measured from the group meeting point");
+  render();
+}
+document.getElementById("nearFrom").addEventListener("click", function (e) {
+  var b = e.target.closest(".chip"); if (!b) return;
+  if (b.dataset.from === "meet") { setNearFrom("meet"); return; }
+  if (!navigator.geolocation) {
+    setNearFrom("meet", "Location isn't available in this browser, so this uses the meeting point");
+    return;
+  }
+  document.getElementById("nearNote").textContent = "Finding your location\u2026";
+  navigator.geolocation.getCurrentPosition(function (pos) {
+    state.origin = [pos.coords.latitude, pos.coords.longitude];
+    setNearFrom("me");
+  }, function () {
+    setNearFrom("meet", "Couldn't get your location, so this uses the meeting point");
+  }, { enableHighAccuracy: false, timeout: 10000, maximumAge: 600000 });
+});
+
 document.getElementById("colourChips").addEventListener("click", function (e) {
   var b = e.target.closest(".chip"); if (!b) return;
   document.querySelectorAll("#colourChips .chip").forEach(function (c) { c.setAttribute("aria-pressed", "false"); });
@@ -995,6 +1057,9 @@ document.getElementById("resetBtn").addEventListener("click", function () {
   state.near = 0; document.getElementById("near").value = 0;
   Object.keys(state.types).forEach(function (k) { state.types[k] = 1; });
   document.querySelectorAll("#typeChips .chip").forEach(function (c) { c.setAttribute("aria-pressed", "true"); });
+  Object.keys(state.regions).forEach(function (k) { state.regions[k] = 1; });
+  document.querySelectorAll("#regionChips .chip").forEach(function (c) { c.setAttribute("aria-pressed", "true"); });
+  setNearFrom("meet");
   state.bands = [1, 1, 1, 1, 1];
   ["dist", "asc", "dur"].forEach(function (k) {
     bounds[k].lo.value = bounds[k].min; bounds[k].hi.value = bounds[k].max; bounds[k].sync();
@@ -1014,7 +1079,6 @@ document.getElementById("themeBtn").addEventListener("click", function () {
   renderBands(); render();
   if (profileRoute) drawProfile(profileRoute);
 });
-map.on("moveend", function () { if (state.near > 0) render(); });
 window.addEventListener("resize", function () {
   map.invalidateSize({ pan: false });
   if (profileRoute) drawProfile(profileRoute);

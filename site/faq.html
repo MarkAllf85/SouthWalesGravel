@@ -218,9 +218,15 @@ footer a { color: var(--text-muted); }
 
 <p>Move the <strong>typical average speed</strong> slider on the map and every time on the page changes to yours. Hilly routes will come out slower than your average and flat ones faster, which is the whole point of doing it this way rather than dividing distance by a single number.</p>
 
+<h2 id="accuracy">How accurate are the times?</h2>
+
+<p>Checked against 24 recorded rides from 11 to 104 km, on the valleys, the Forest of Dean and North Wales. At the default settings the estimates came out 3% long across the set, and the typical ride was within 6% of its actual moving time; 16 of the 24 were within 10%. The two biggest misses were the extremes of the terrain: a short, steep Forest of Dean loop took 17% longer than predicted, and a flat old railway path was 16% quicker.</p>
+
+<p>The times are <strong>moving time</strong>. They allow for gates and junctions but not for a café stop or a long regroup. On those same rides the total time out was about 16% longer than the moving time, so add that if you want to know when you'll be home.</p>
+
 <h2 id="speed">What should I set my average speed to?</h2>
 
-<p>Whatever you normally see at the end of a gravel ride of a couple of hours. Not your best ever, and not your road average, which will be higher.</p>
+<p>Your average <strong>moving</strong> speed on a gravel ride of a couple of hours, which Garmin and Strava both show as "Avg Moving Speed" or similar. Not your best ever, not your road average, which will be higher, and not your elapsed average, which includes stops.</p>
 
 <p>Two other controls matter. <strong>Weight</strong> is you plus the bike plus whatever you're carrying, and it changes what the climbs cost you rather than the flat. <strong>Surface</strong> matters more than people expect: rolling resistance is the single biggest variable on gravel, and the difference between smooth forest road and loose stone is worth several minutes an hour. Set it to whatever you expect underfoot and the estimates get noticeably more honest.</p>
 
@@ -243,6 +249,8 @@ footer a { color: var(--text-muted); }
 <h2 id="tracking">Does this page track me?</h2>
 
 <p>No. There are no cookies, no analytics and nothing is stored on your device. Nothing you do here is recorded anywhere.</p>
+
+<p>If you press <strong>My location</strong> under "Start within", your browser asks for your position once. It's used on your device to measure the distance to each route's start, and it's never sent anywhere or kept after you close the page.</p>
 
 <p>One thing worth knowing anyway: the map background is drawn from tiles fetched live from OpenStreetMap, CyclOSM, OpenTopoMap and Esri, so those four see your IP address and roughly which part of the map you looked at, the same as on any site using their maps. Nobody here sees it, and there's nothing to consent to or dismiss.</p>
 
