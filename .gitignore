@@ -8,6 +8,12 @@ zones.local.txt
 privacy-check.ps1
 **/COURSE_*.gpx
 
+# Incoming batches. Garmin activity exports start at the front door and carry
+# timestamps and heart rate on every point; only the sanitised, clipped copies
+# in data/raw/gpx are ever published.
+GPX Files/
+**/activity_*.gpx
+
 # Working files
 data/processed/
 work/

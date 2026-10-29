@@ -40,6 +40,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import name_routes as N  # noqa: E402
 
 ROUTES_JSON = ROOT / "site" / "data" / "routes.json"
+FRAME_MAX_LAT = 52.3   # northern edge of the drawn panel; see main()
 OUT = ROOT / "site" / "assets" / "share-card.png"
 
 W, H = 1200, 630                  # the size every scraper expects
@@ -118,8 +119,12 @@ def main():
     pad = 28 * SS
     panel = (int(W * 0.27) * SS, pad + 20 * SS, W * SS - pad, H * SS - pad)
 
-    lats = [p[0] for t in tracks.values() for p in t]
-    lons = [p[1] for t in tracks.values() for p in t]
+    # Frame on South Wales. A handful of routes elsewhere (North Wales) would
+    # otherwise stretch the frame until the main cluster is a thumbnail. They
+    # still count in the totals; they simply fall outside the drawn panel.
+    framed = [r for r in routes if r["bbox"][2] < FRAME_MAX_LAT]
+    lats = [p[0] for r in framed for p in tracks[r["id"]]]
+    lons = [p[1] for r in framed for p in tracks[r["id"]]]
     lat0 = (min(lats) + max(lats)) / 2
     kx = math.cos(math.radians(lat0))           # crude equirectangular is fine at this span
     spanx = (max(lons) - min(lons)) * kx
@@ -135,7 +140,7 @@ def main():
 
     # Longest first so the big routes sit behind the short ones rather than
     # drawing over them.
-    for r in sorted(routes, key=lambda r: -r["distance_km"]):
+    for r in sorted(framed, key=lambda r: -r["distance_km"]):
         pts = [xy(p) for p in tracks[r["id"]]]
         d.line(pts, fill=rgb(HUES[hue_of[r["id"]]]), width=3 * SS, joint="curve")
 

@@ -545,12 +545,15 @@ var bounds = {}, layers = {}, selected = null, hovered = null, ready = false;
    style would then change as you moved a slider, and a route you had already
    picked out would become a different colour underneath you.
 
-   Six hues by six dashes is thirty-six combinations against forty routes, so
-   four pairs must still share. Which four is chosen rather than left to the
+   Six hues by six dashes is thirty-six combinations against sixty-two routes,
+   so twenty-six pairs must share. Which pairs is chosen rather than left to the
    index: each route takes the least-used combination, and among equally used
    ones the combination whose existing owners lie furthest away. Two routes
    sharing a style therefore sit in different valleys instead of overlapping in
-   the same one, which is the only place the ambiguity would actually bite. */
+   the same one, which is the only place the ambiguity would actually bite.
+   Measured on 2026-10-29: the worst sharing pair runs together for 5.2 km,
+   all of it on the common approach out of the meeting point. More dash styles
+   would not help; past six they stop reading as different at map widths. */
 (function assignStyles() {
   var combos = [];
   for (var h = 0; h < HUES_LIGHT.length; h++)
@@ -1018,12 +1021,23 @@ window.addEventListener("resize", function () {
   render();
 });
 window.addEventListener("orientationchange", function () {
-  setTimeout(function () { map.invalidateSize({ pan: false }); fitAll(); }, 300);
+  setTimeout(function () { map.invalidateSize({ pan: false }); fitAll(true); }, 300);
 });
 
-function fitAll() {
+/* With a few routes far from the rest (North Wales), fitting every route on
+   load would shrink the main cluster to a thumbnail. On load the map frames the
+   routes within 60 km of the median route centre; the Fit button still frames
+   everything that passes the filters. */
+function fitAll(cluster) {
   var vis = routes.filter(passes);
   if (!vis.length) return;
+  if (cluster === true) {
+    var mid = function (a) { a = a.slice().sort(function (x, y) { return x - y; }); return a[Math.floor(a.length / 2)]; };
+    var ctr = function (r) { return [(r.bbox[0] + r.bbox[2]) / 2, (r.bbox[1] + r.bbox[3]) / 2]; };
+    var m = [mid(vis.map(function (r) { return ctr(r)[0]; })), mid(vis.map(function (r) { return ctr(r)[1]; }))];
+    var near = vis.filter(function (r) { return haversineKm(ctr(r), m) < 60; });
+    if (near.length) vis = near;
+  }
   var b = L.latLngBounds([]);
   vis.forEach(function (r) { b.extend([r.bbox[0], r.bbox[1]]); b.extend([r.bbox[2], r.bbox[3]]); });
   map.fitBounds(b, { padding: [18, 18] });
@@ -1039,9 +1053,13 @@ if (!routes.length) {
   renderBands();
   ready = true;
   render();
-  fitAll();
+  /* A deep link frames its own route instead of the cluster. Doing both used
+     to race: the cluster fit animates, the route fit lands first, and the end
+     of the animation then snapped the view back, so a link to a route far
+     from the rest opened with that route off screen. */
   var want = new URLSearchParams(location.search).get("route");
   if (want && routes.some(function (r) { return r.id === want; })) select(want, true);
+  else fitAll(true);
 }
 })();
 </script>

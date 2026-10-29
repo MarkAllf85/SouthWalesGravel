@@ -54,6 +54,20 @@ Nowhere in this repository. They sit in `zones.local.txt`, which `.gitignore` ex
 
 Run all of them before `build.py`, not after.
 
+## Recorded activities, not just planned courses
+
+From October 2026 batches include Garmin activity exports (`activity_*.gpx`) as well as courses. An activity is a recording, so it carries a timestamp and heart rate on every point and starts at the front door rather than the meeting point. Three extra steps apply, in this order:
+
+    python scripts\sanitise_activity.py IN.gpx data\raw\gpx\new-ID.gpx "Gravel - new ID"
+    (clip_to_point, align_starts, clip_to_point as above, over the new files only)
+    python scripts\trim_open_ends.py --at 51.647080,-3.205153 --avoid <zone A> --apply
+
+`sanitise_activity.py` keeps position and elevation only. `trim_open_ends.py` deals with rides that left home by a road that does not pass the meeting point: clipping leaves that end 200 m from the door, which is inside the rule but points at the street, so the end is pulled back to at least 1 km from zone A. Ends at the meeting point are left alone.
+
+Before any of that, check each new file for duplication by measuring how much of its line lies within 60 m of each existing route, both ways. Same ride twice shows as roughly 90% or more in both directions. A shorter route lying almost entirely on a longer one is a variant, not a duplicate, and the audit's overlap advisory will list it.
+
+A third exclusion zone covers a holiday start point in Gwynedd. Like the others it lives only in `zones.local.txt`, and `privacy-check.ps1` picks it up automatically.
+
 ## The audit, which runs last
 
 `scripts/audit_routes.py` checks the whole library after a build and exits non-zero if anything is wrong, so it can gate a push:
