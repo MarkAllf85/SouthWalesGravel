@@ -214,8 +214,19 @@ input[type="range"].single { width: 100%; accent-color: var(--brand); }
   box-shadow: var(--shadow); z-index: 1150; overflow: hidden; display: none;
 }
 #detail.open { display: block; }
-#detail .hd { display: flex; align-items: flex-start; gap: 8px; padding: 12px 14px 8px; }
-#detail .hd h3 { margin: 0; font-size: 15px; font-weight: 650; flex: 1; letter-spacing: -.01em; }
+#detail .hd { display: flex; align-items: flex-start; gap: 6px; padding: 12px 14px 8px; position: relative; }
+#detail .ttl { flex: 1; min-width: 0; cursor: pointer; }
+#detail .hd h3 { margin: 0; font-size: 15px; font-weight: 650; letter-spacing: -.01em; }
+#detail .sum { display: none; margin-top: 2px; font-size: 12.5px; color: var(--text-secondary);
+  font-variant-numeric: tabular-nums; }
+#detail .tog { background: none; border: none; cursor: pointer; color: var(--text-muted);
+  padding: 0 2px; line-height: 0; }
+#detail .tog svg { transition: transform .15s ease; }
+#detail .grab { display: none; }
+/* Collapsed: name and one summary line, the map gets the rest. */
+#detail.collapsed #dBody { display: none; }
+#detail.collapsed .sum { display: block; }
+#detail.collapsed .tog svg { transform: rotate(180deg); }
 #detail .close { background: none; border: none; font-size: 20px; line-height: 1; cursor: pointer; color: var(--text-muted); padding: 0 2px; }
 .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--border); border-block: 1px solid var(--border); }
 .stat { background: var(--surface-1); padding: 8px 10px; }
@@ -249,6 +260,7 @@ input[type="range"].single { width: 100%; accent-color: var(--brand); }
   .dual input[type="range"]::-moz-range-thumb { width: 22px; height: 22px; }
   input[type="range"].single { height: 34px; }
   #detail .close { font-size: 26px; padding: 4px 8px; margin: -4px -4px 0 0; }
+  #detail .tog { padding: 6px 8px; margin: -4px 0 0; }
 }
 
 @media (max-width: 860px) {
@@ -261,6 +273,10 @@ input[type="range"].single { width: 100%; accent-color: var(--brand); }
   body.panel-open #panel { transform: none; }
   /* Sit clear of the tile attribution, which has to stay readable. */
   #detail { left: 8px; right: 8px; width: auto; bottom: 24px; max-height: 58vh; overflow-y: auto; }
+  /* A grab bar says "this moves": tap the title or swipe the top of the card. */
+  #detail .grab { display: block; position: absolute; top: 5px; left: 50%; width: 36px; height: 4px;
+    margin-left: -18px; border-radius: 2px; background: var(--border); }
+  #detail .hd { padding-top: 16px; touch-action: none; }
   #profile { height: 88px; }
   .stats { grid-template-columns: repeat(2, 1fr); }
   .leaflet-control-attribution { font-size: 10px; }
@@ -298,6 +314,7 @@ input[type="range"].single { width: 100%; accent-color: var(--brand); }
   #profile { height: 100%; min-height: 60px; }
   .stats { grid-template-columns: repeat(4, 1fr); }
   #detail .stat .v { font-size: 14px; }
+  #detail.collapsed { bottom: auto; }
 }
 </style>
 </head>
@@ -420,16 +437,27 @@ input[type="range"].single { width: 100%; accent-color: var(--brand); }
 <div id="map"></div>
 
 <section id="detail" aria-live="polite">
-  <div class="hd">
-    <h3 id="dName"></h3>
+  <div class="hd" id="dHead">
+    <span class="grab" aria-hidden="true"></span>
+    <div class="ttl" id="dTitle">
+      <h3 id="dName"></h3>
+      <div class="sum" id="dSum"></div>
+    </div>
+    <button class="tog" id="dToggle" type="button" aria-expanded="true" aria-controls="dBody"
+            aria-label="Hide route details">
+      <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 8l5 5 5-5"
+        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
     <button class="close" id="dClose" aria-label="Close">&times;</button>
   </div>
-  <div class="stats" id="dStats"></div>
-  <div id="profileWrap">
-    <svg id="profile" role="img" aria-label="Elevation profile"></svg>
-    <div id="tip"></div>
+  <div id="dBody">
+    <div class="stats" id="dStats"></div>
+    <div id="profileWrap">
+      <svg id="profile" role="img" aria-label="Elevation profile"></svg>
+      <div id="tip"></div>
+    </div>
+    <div class="actions" id="dActions"></div>
   </div>
-  <div class="actions" id="dActions"></div>
 </section>
 
 <script src="assets/leaflet/leaflet.js"></script>
@@ -836,7 +864,55 @@ function refreshDetail() {
     stat("Ascent", r.ascent_m, "m") +
     stat("Est. time", hm(r._hours), "") +
     stat("Avg speed", (r.distance_km / r._hours).toFixed(1), "km/h");
+  document.getElementById("dSum").textContent =
+    r.distance_km.toFixed(1) + " km \u00b7 " + r.ascent_m + " m \u00b7 " + hm(r._hours);
 }
+
+/* ---------- the detail card on a phone ----------
+   The card used to open at full size and stay that way, which on a phone left
+   a strip of map above it and no way to get the rest back short of closing it.
+   It now opens collapsed on narrow screens (name and one line of numbers), the
+   title or the chevron toggles it, a swipe on its top edge does the same, and
+   the route is always framed in the map that is left visible above it. Desktop
+   keeps the full card by default but gets the same toggle. */
+var phone = window.matchMedia("(max-width: 860px)");
+var cardCollapsed = phone.matches;
+function fitSelected() {
+  var r = selected && routes.find(function (x) { return x.id === selected; });
+  if (!r) return;
+  var d = document.getElementById("detail");
+  var b = L.latLngBounds([r.bbox[0], r.bbox[1]], [r.bbox[2], r.bbox[3]]);
+  if (!d.classList.contains("open")) { map.fitBounds(b, { padding: [24, 24] }); return; }
+  var m = map.getContainer().getBoundingClientRect(), c = d.getBoundingClientRect();
+  if (c.width > m.width * 0.6) {
+    // a bottom sheet spanning the width: frame the route in the map above it
+    map.fitBounds(b, { paddingTopLeft: [20, 20], paddingBottomRight: [20, Math.max(20, m.bottom - c.top + 16)] });
+  } else {
+    // a card docked at the side (desktop, or a phone held landscape)
+    map.fitBounds(b, { paddingTopLeft: [24, 24], paddingBottomRight: [Math.max(24, m.right - c.left + 16), 24] });
+  }
+}
+function setCollapsed(c, refit) {
+  cardCollapsed = c;
+  var d = document.getElementById("detail"), t = document.getElementById("dToggle");
+  d.classList.toggle("collapsed", c);
+  t.setAttribute("aria-expanded", c ? "false" : "true");
+  t.setAttribute("aria-label", c ? "Show route details" : "Hide route details");
+  if (!c && profileRoute) drawProfile(profileRoute);   // it has no width while hidden
+  if (refit) fitSelected();
+}
+document.getElementById("dToggle").addEventListener("click", function () { setCollapsed(!cardCollapsed, true); });
+document.getElementById("dTitle").addEventListener("click", function () { setCollapsed(!cardCollapsed, true); });
+(function swipe() {
+  var y0 = null, head = document.getElementById("dHead");
+  head.addEventListener("touchstart", function (e) { y0 = e.touches[0].clientY; }, { passive: true });
+  head.addEventListener("touchend", function (e) {
+    if (y0 === null) return;
+    var dy = e.changedTouches[0].clientY - y0; y0 = null;
+    if (dy > 30 && !cardCollapsed) setCollapsed(true, true);
+    else if (dy < -30 && cardCollapsed) setCollapsed(false, true);
+  }, { passive: true });
+})();
 function select(id, fly) {
   selected = (selected === id) ? null : id;
   var d = document.getElementById("detail");
@@ -861,10 +937,16 @@ function select(id, fly) {
   document.getElementById("dActions").innerHTML = acts.join("");
   var sb = document.getElementById("shareBtn");
   if (sb) sb.addEventListener("click", function () { shareRoute(r, sb); });
+  // On a phone the filter drawer covers most of the map, so picking a route
+  // from the list closes it.
+  if (phone.matches && document.body.classList.contains("panel-open")) {
+    document.body.classList.remove("panel-open");
+    setTimeout(function () { map.invalidateSize({ pan: false }); }, 220);
+  }
   d.classList.add("open");
+  setCollapsed(cardCollapsed, false);
   drawProfile(r);
-  if (fly) map.fitBounds(L.latLngBounds([r.bbox[0], r.bbox[1]], [r.bbox[2], r.bbox[3]]),
-                       { padding: [24, 24] });
+  if (fly) fitSelected();
   render();
 }
 
